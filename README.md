@@ -150,4 +150,4 @@ This plugin has been always positively supporting mulltibyte characters.
 '<,'><F7>        " select a block of lines from 3 to 5 in the left window
 <F7>
 ```
-![example1](https://cloud.githubusercontent.com/assets/3096934/12641293/21c8eee6-c5f2-11e5-9eb0-71c3868ec6d3.gif)
+![demo1](https://cloud.githubusercontent.com/assets/3096934/12695864/f49c40fa-c79d-11e5-95ce-e01206fdaef0.gif)
