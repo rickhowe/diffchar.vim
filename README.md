@@ -18,10 +18,10 @@ a changed line. But this plugin will find the exact differences between them,
 character by character - so called *DiffChar*.
 
 For example, in diff mode:  
-![example1 a](https://cloud.githubusercontent.com/assets/3096934/12708337/d8884554-c8e1-11e5-8fb6-74ca803e7703.png)
+![example1 a](https://cloud.githubusercontent.com/assets/3096934/12971229/062bd456-d0dc-11e5-8b39-fed08fcb797c.png)
 
 this plugin will exactly show the changed and added units:  
-![example1 b](https://cloud.githubusercontent.com/assets/3096934/12708338/d8d57202-c8e1-11e5-9ae8-dcb89524fa8e.png)
+![example1 b](https://cloud.githubusercontent.com/assets/3096934/12971228/05c71552-d0dc-11e5-978b-20357846be27.png)
 
 This plugin will synchronously show/reset the highlights of the exact
 differences as soon as the diff mode starts/ends since a `g:DiffModeSync` is

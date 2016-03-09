@@ -349,7 +349,12 @@ endfunction
 
 function! diffchar#ShowDiffChar(lines)
 	" initialize when t:DChar is not defined
-	if !exists('t:DChar') && s:InitializeDiffChar() == -1 | return | endif
+	if !exists('t:DChar')
+		if s:InitializeDiffChar() == -1 | return | endif
+		let first = 1
+	else
+		let first = empty(t:DChar.hlc[1]) || empty(t:DChar.hlc[2])
+	endif
 
 	" refresh window number of diffchar windows
 	call s:RefreshDiffCharWID()
@@ -451,6 +456,9 @@ function! diffchar#ShowDiffChar(lines)
 		unlet t:DChar
 		return
 	endif
+
+	" if not the first call in this tab page, return here
+	if !first | return | endif
 
 	" set events in each buffer
 	for k in [1, 2]
@@ -1152,26 +1160,23 @@ function! s:ToggleDiffHL(on)
 endfunction
 
 function! s:AdjustHLOption()
-	if exists('t:DChar.vdl')
-		if !exists('s:save_hl')
-			call s:DisableHLOption()
-		endif
-	else
-		if exists('s:save_hl')
-			call s:RestoreHLOption()
-		endif
-	endif
+	call eval(exists('t:DChar.vdl') ?
+			\'s:DisableHLOption()' : 's:RestoreHLOption()')
 endfunction
 
 function! s:DisableHLOption()
-	let s:save_hl = &highlight
-	let &highlight = join(map(split(s:save_hl, ','),
+	if !exists('s:save_hl')
+		let s:save_hl = &highlight
+		let &highlight = join(map(split(s:save_hl, ','),
 			\'v:val[0] =~# "[CT]" ? v:val[0] . "-" : v:val'), ',')
+	endif
 endfunction
 
 function! s:RestoreHLOption()
-	let &highlight = s:save_hl
-	unlet s:save_hl
+	if exists('s:save_hl')
+		let &highlight = s:save_hl
+		unlet s:save_hl
+	endif
 endfunction
 
 function! s:OverwriteDiffHL()
