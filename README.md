@@ -41,7 +41,7 @@ used for the added units and both the previous and next character of the
 deleted units are underlined.
 
 This plugin traces the differences based on a `g:DiffUnit`. Its default is
-'Word1' and it handles a \w\+ word and a \W character as a difference unit.
+'Word1' and it handles a \w\\+ word and a \W character as a difference unit.
 There are other types of word provided and you can also set 'Char' to compare
 character by character.
 
@@ -98,9 +98,9 @@ This plugin has been always positively supporting mulltibyte characters.
 #### Options
 
 * `g:DiffUnit`, `t:DiffUnit` - Type of difference unit
- * 'Word1'  : \w\+ word and any \W single character (default)
+ * 'Word1'  : \w\\+ word and any \W single character (default)
  * 'Word2'  : non-space and space words
- * 'Word3'  : \< or \> character class boundaries
+ * 'Word3'  : \\< or \\> character class boundaries
  * 'Char'   : any single character
  * 'CSV(,)' : separated by characters such as ',', ';', and '\t'
 * `g:DiffColors`, `t:DiffColors` - Matching colors for changed unit pairs (always DiffAdd for added units)

@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2016/01/30
-" Version:     6.0
+" Last Change: 2016/03/09
+" Version:     6.1
 " Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar')
 	finish
 endif
-let g:loaded_diffchar = 6.0
+let g:loaded_diffchar = 6.1
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -74,11 +74,9 @@ let g:DiffColors = 0		" always 1 color
 endif
 
 " Set a difference unit updating while editing
-if exists('##TextChanged') && exists('##TextChangedI')
 if !exists('g:DiffUpdate')
 let g:DiffUpdate = 1		" enable
 " let g:DiffUpdate = 0		" disable
-endif
 endif
 
 " Set a time length (ms) to apply this plugin's internal algorithm first
