@@ -18,10 +18,17 @@ a changed line. But this plugin will find the exact differences between them,
 character by character - so called *DiffChar*.
 
 For example, in diff mode:  
+<<<<<<< HEAD
 ![example1 a](https://cloud.githubusercontent.com/assets/3096934/12708337/d8884554-c8e1-11e5-8fb6-74ca803e7703.png)
 
 this plugin will exactly show the changed and added units:  
 ![example1 b](https://cloud.githubusercontent.com/assets/3096934/12708338/d8d57202-c8e1-11e5-9ae8-dcb89524fa8e.png)
+=======
+![example1 a](https://cloud.githubusercontent.com/assets/3096934/12971229/062bd456-d0dc-11e5-8b39-fed08fcb797c.png)
+
+this plugin will exactly show the changed and added units:  
+![example1 b](https://cloud.githubusercontent.com/assets/3096934/12971228/05c71552-d0dc-11e5-978b-20357846be27.png)
+>>>>>>> a90e8f0eb5855b29d1fbb61acee81ecdc4288f9a
 
 This plugin will synchronously show/reset the highlights of the exact
 differences as soon as the diff mode starts/ends since a `g:DiffModeSync` is
@@ -41,7 +48,7 @@ used for the added units and both the previous and next character of the
 deleted units are underlined.
 
 This plugin traces the differences based on a `g:DiffUnit`. Its default is
-'Word1' and it handles a \w\+ word and a \W character as a difference unit.
+'Word1' and it handles a \w\\+ word and a \W character as a difference unit.
 There are other types of word provided and you can also set 'Char' to compare
 character by character.
 
@@ -98,9 +105,9 @@ This plugin has been always positively supporting mulltibyte characters.
 #### Options
 
 * `g:DiffUnit`, `t:DiffUnit` - Type of difference unit
- * 'Word1'  : \w\+ word and any \W single character (default)
+ * 'Word1'  : \w\\+ word and any \W single character (default)
  * 'Word2'  : non-space and space words
- * 'Word3'  : \< or \> character class boundaries
+ * 'Word3'  : \\< or \\> character class boundaries
  * 'Char'   : any single character
  * 'CSV(,)' : separated by characters such as ',', ';', and '\t'
 * `g:DiffColors`, `t:DiffColors` - Matching colors for changed unit pairs (always DiffAdd for added units)
