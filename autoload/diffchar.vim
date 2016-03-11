@@ -861,6 +861,14 @@ function! s:UpdateDiffChar(key, mode)
 
 			" show hl of changed lines
 			call diffchar#ShowDiffChar(chl)
+
+			" if hl lines are changed in diff mode, refresh diff HL
+			if has('patch-7.4.682') && exists('t:DChar.vdl') &&
+				\chl != map(keys(t:DChar.hlc[a:key]),
+								\'eval(v:val)')
+					call s:RestoreDiffHL()
+					call s:OverwriteDiffHL()
+			endif
 		endif
 	endif
 
