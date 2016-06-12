@@ -51,10 +51,8 @@ start or end position of the previous unit. Then this plugin echoes the
 corresponding difference unit with the assigned color as a message. Those
 keymaps, `<F7>` and `<F8>` are configurable in your vimrc and so on.
 
-This plugin attempts to keep the exact differences updated while editing since
-a `g:DiffUpdate` is enabled as a default. However, a total number of lines are
-changed (after some lines are added/deleted), all the diff highlights will
-be cleared and you will need to manually show them again to update.
+This plugin always keeps the exact differences updated while editing if a
+`g:DiffUpdate` is enabled and TextChanged/TextChangedI events are available.
 
 This plugin has been using "An O(NP) Sequence Comparison Algorithm" developed
 by S.Wu, et al., which always finds an optimum sequence quickly. But for

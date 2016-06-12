@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2016/03/09
-Version:     6.1
+Last Change: 2016/06/12
+Version:     6.2
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -58,10 +58,8 @@ start or end position of the previous unit. Then this plugin echoes the
 corresponding difference unit with the assigned color as a message. Those
 keymaps, <F7> and <F8> are configurable in your vimrc and so on.
 
-This plugin attempts to keep the exact differences updated while editing since
-a |g:DiffUpdate| is enabled as a default. However, a total number of lines are
-changed (after some lines are added/deleted), all the diff highlights will
-be cleared and you will need to manually show them again to update.
+This plugin always keeps the exact differences updated while editing if a
+|g:DiffUpdate| is enabled and TextChanged/TextChangedI events are available.
 
 This plugin has been using "An O(NP) Sequence Comparison Algorithm" developed
 by S.Wu, et al., which always finds an optimum sequence quickly. But for
@@ -155,6 +153,15 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 6.2
+* Enhanced to always keep the exact differences updated while editing if
+  g:DiffUpdate is enabled, even if a total number of lines are changed (some
+  lines are added or deleted).
+* Changed to handle all the windows as non-diff mode if more than 2 diff mode
+  buffers exist in a tabpage.
+* Fixed not to cause an error if the number of lines are different between two
+  windows on %SDChar in non-diff mode.
 
 Update : 6.1
 * Improved a workaround for vim 7.4.682 (at update 5.1) not to disappear vim's

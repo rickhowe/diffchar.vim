@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2016/03/09
-" Version:     6.1
+" Last Change: 2016/06/12
+" Version:     6.2
 " Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar')
 	finish
 endif
-let g:loaded_diffchar = 6.1
+let g:loaded_diffchar = 6.2
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -101,7 +101,7 @@ let &diffexpr = 'diffchar#DiffCharExpr()'
 endif
 
 " Set an event group of this plugin
-augroup dchar
+augroup diffchar
 au!
 au! FilterWritePre * call diffchar#SetDiffModeSync()
 augroup END
