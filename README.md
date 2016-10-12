@@ -18,10 +18,10 @@ a changed line. But this plugin will find the exact differences between them,
 character by character - so called *DiffChar*.
 
 For example, in diff mode:  
-![example1 a](https://cloud.githubusercontent.com/assets/3096934/12971229/062bd456-d0dc-11e5-8b39-fed08fcb797c.png)
+![example1](example1.png)
 
 this plugin will exactly show the changed and added units:  
-![example1 b](https://cloud.githubusercontent.com/assets/3096934/12971228/05c71552-d0dc-11e5-978b-20357846be27.png)
+![example2](example2.png)
 
 This plugin will synchronously show/reset the highlights of the exact
 differences as soon as the diff mode starts/ends since a `g:DiffModeSync` is
@@ -35,21 +35,24 @@ command. To show or reset them, use `:SDChar` or `:RDChar` command.
 In diff mode, the corresponding changed lines are compared between two
 windows. In non-diff mode, the same lines are compared among them. You can
 set a matching color to a `g:DiffColors` to make it easy to recognize the
-corresponding changed units between two windows. As a default, all the 
+corresponding changed units between two windows. As a default, all the
 changed units are highlighted with `DiffText`. In addition, `DiffAdd` is always
 used for the added units and both the previous and next character of the
-deleted units are underlined.
+deleted units are shown in bold/underline.
 
 This plugin traces the differences based on a `g:DiffUnit`. Its default is
 'Word1' and it handles a \w\\+ word and a \W character as a difference unit.
 There are other types of word provided and you can also set 'Char' to compare
 character by character.
 
-While showing the exact differences, you can use `]b` or `]e` to jump cursor to
-the start or end position of the next difference unit, and `[b` or `[e` to the
-start or end position of the previous unit. Then this plugin echoes the
-corresponding difference unit with the assigned color as a message. Those
-keymaps, `<F7>` and `<F8>` are configurable in your vimrc and so on.
+While showing the exact differences, when cursor is moved on a difference
+unit, you can see its corresponding unit with cursor-like highlight in another
+window, and also its whole string with the assigned color as a message,
+based on `g:DiffPairVisible`.
+
+You can use `]b` or `]e` to jump cursor to the start or end position of the next
+difference unit, and `[b` or `[e` to the start or end position of the previous
+unit. Those keymaps, `<F7>` and `<F8>` are configurable in your vimrc and so on.
 
 This plugin always keeps the exact differences updated while editing if a
 `g:DiffUpdate` is enabled and TextChanged/TextChangedI events are available.
@@ -106,7 +109,11 @@ This plugin has been always positively supporting mulltibyte characters.
  * 1   : 4 colors in fixed order
  * 2   : 8 colors in fixed order
  * 3   : 16 colors in fixed order
- * 100 : all available colors in dynamic random order
+ * 100 : all colors defined in highlight option in dynamic random order
+* `g:DiffPairVisible`, `t:DiffPairVisible` - Make a corresponding unit visible when cursor is moved on a difference unit
+ * 2 : highlight with cursor-like color plus echo as a message (default)
+ * 1 : highlight with cursor-like color
+ * 0 : nothing visible
 * `g:DiffUpdate`, `t:DiffUpdate` - Interactively updating the diff highlights while editing (available on vim 7.4)
  * 1 : enable (default)
  * 0 : disable
@@ -134,13 +141,14 @@ This plugin has been always positively supporting mulltibyte characters.
 
 :let t:DiffColors = 3
 :windo diffthis | windo set wrap
-]b               " several times on line 3 in the left window
+<space>          " cursor move forward on line 3 in the left window
+]b               " several times on line 5 in the left window
 :diffoff!
 
-<F8>             " on line 3 in the left window
-<F8>             " on line 7 in the left window
+<F8>             " on line 1 in the left window
+<F8>             " on line 5 in the left window
 <F7>
 '<,'><F8>        " select a block of lines from 3 to 5 in the left window
 <F7>
 ```
-![demo1](https://cloud.githubusercontent.com/assets/3096934/12695864/f49c40fa-c79d-11e5-95ce-e01206fdaef0.gif)
+![demo](demo.gif)

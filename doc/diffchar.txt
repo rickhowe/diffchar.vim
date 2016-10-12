@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2016/06/12
-Version:     6.2
+Last Change: 2016/10/12
+Version:     6.3
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -42,21 +42,24 @@ command. To show or reset them, use |:SDChar| or |:RDChar| command.
 In diff mode, the corresponding changed lines are compared between two
 windows. In non-diff mode, the same lines are compared among them. You can
 set a matching color to a |g:DiffColors| to make it easy to recognize the
-corresponding changed units between two windows. As a default, all the 
+corresponding changed units between two windows. As a default, all the
 changed units are highlighted with DiffText. In addition, DiffAdd is always
 used for the added units and both the previous and next character of the
-deleted units are underlined.
+deleted units are shown in bold/underline.
 
 This plugin traces the differences based on a |g:DiffUnit|. Its default is
 'Word1' and it handles a \w\+ word and a \W character as a difference unit.
 There are other types of word provided and you can also set 'Char' to compare
 character by character.
 
-While showing the exact differences, you can use ]b or ]e to jump cursor to
-the start or end position of the next difference unit, and [b or [e to the
-start or end position of the previous unit. Then this plugin echoes the
-corresponding difference unit with the assigned color as a message. Those
-keymaps, <F7> and <F8> are configurable in your vimrc and so on.
+While showing the exact differences, when cursor is moved on a difference
+unit, you can see its corresponding unit with cursor-like highlight in another
+window, and also its whole string with the assigned color as a message,
+based on |g:DiffPairVisible|.
+
+You can use ]b or ]e to jump cursor to start or end position of the next
+difference unit, and [b or [e to the start or end position of the previous
+unit. Those keymaps, <F7> and <F8> are configurable in your vimrc and so on.
 
 This plugin always keeps the exact differences updated while editing if a
 |g:DiffUpdate| is enabled and TextChanged/TextChangedI events are available.
@@ -130,7 +133,13 @@ OPTIONS                                                *diffchar-options*
     1   : 4 colors in fixed order
     2   : 8 colors in fixed order
     3   : 16 colors in fixed order
-    100 : all available colors in dynamic random order
+    100 : all colors defined in highlight option in dynamic random order
+
+|g:DiffPairVisible|, |t:DiffPairVisible|
+    Make a corresponding unit visible when cursor is moved on a difference unit
+    2 : highlight with cursor-like color plus echo as a message (default)
+    1 : highlight with cursor-like color
+    0 : nothing visible
 
 |g:DiffUpdate|, |t:DiffUpdate| (available on vim 7.4)
     Interactively updating the diff highlights while editing
@@ -153,6 +162,16 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 6.3
+* Introduced g:DiffPairVisible option. As a default, when cursor is moved on
+  a difference unit, its corresponding unit will be highlighted with
+  cursor-like color in another window and also echoed at the screen below.
+* Made a deleted unit more visible by showing with bold as well as underline
+  attributes on its previous and next characters.
+* Fixed:
+  - an empty line was sometimes drawn incorrectly as a deleted unit.
+  - g:UnitColors option was not usable (t:DiffColors was OK).
 
 Update : 6.2
 * Enhanced to always keep the exact differences updated while editing if
