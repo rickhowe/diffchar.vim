@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2016/10/12
-Version:     6.3
+Last Change: 2016/10/22
+Version:     6.4
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -163,6 +163,15 @@ OPTIONS                                                *diffchar-options*
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
 
+Update : 6.4
+* Fixed:
+  - if g:DiffPairVisible was enabled (default), visual mode was started but
+    suddenly stopped just after the cursor was moved, so can not specify
+    any visual area.
+  - if g:DiffUpdate was enabled (default), when some lines were added or
+    deleted while editing, all the lines were unexpectedly selected to
+    become highlighted.
+
 Update : 6.3
 * Introduced g:DiffPairVisible option. As a default, when cursor is moved on
   a difference unit, its corresponding unit will be highlighted with
@@ -171,7 +180,7 @@ Update : 6.3
   attributes on its previous and next characters.
 * Fixed:
   - an empty line was sometimes drawn incorrectly as a deleted unit.
-  - g:UnitColors option was not usable (t:DiffColors was OK).
+  - g:DiffColors option was not usable (t:DiffColors was OK).
 
 Update : 6.2
 * Enhanced to always keep the exact differences updated while editing if
