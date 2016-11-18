@@ -374,8 +374,8 @@ function! s:InitializeDiffChar(...)
 
 	" define a specific highlight group to show a position of a deleted
 	" unit, _DiffDelPos = DiffChange +/- bold/underline
-	let hm = has('gui_running') || (has('nvim') && &termguicolors)
-                    \? 'gui' : &t_Co > 1 ? 'cterm' : 'term'
+	let hm = has('gui_running') || (has('termguicolors') && &termguicolors)
+                \ ? 'gui' : &t_Co > 1 ? 'cterm' : 'term'
 	let hd = hlID(t:DChar.dhl.C)
 	let ha = map(['fg', 'bg', 'sp'], 'v:val . "=" . synIDattr(hd, v:val)')
 	let hx = filter(['bold', 'italic', 'reverse', 'inverse', 'standout',
