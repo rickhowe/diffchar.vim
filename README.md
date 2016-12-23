@@ -89,8 +89,8 @@ This plugin has been always positively supporting mulltibyte characters.
 
 #### Keymaps
 
-* `<Plug>ToggleDiffCharAllLines` (default: `<F7>`) - Toggle to show/reset the highlights for all/selected lines
-* `<Plug>ToggleDiffCharCurrentLine` (default: `<F8>`) - Toggle to show/reset the highlights for current/selected lines
+* `<Plug>ToggleDiffCharAllLines` (default: `<F7>` if not mapped) - Toggle to show/reset the highlights for all/selected lines
+* `<Plug>ToggleDiffCharCurrentLine` (default: `<F8>` if not mapped) - Toggle to show/reset the highlights for current/selected lines
 * `<Plug>JumpDiffCharPrevStart` (default: `[b`) - Jump cursor to the start position of the previous difference unit
 * `<Plug>JumpDiffCharNextStart` (default: `]b`) - Jump cursor to the start position of the next difference unit
 * `<Plug>JumpDiffCharPrevEnd` (default: `[e`) - Jump cursor to the end position of the previous difference unit

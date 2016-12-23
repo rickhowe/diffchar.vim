@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2016/10/22
-" Version:     6.4
+" Last Change: 2016/12/23
+" Version:     6.5
 " Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar')
 	finish
 endif
-let g:loaded_diffchar = 6.4
+let g:loaded_diffchar = 6.5
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -37,10 +37,14 @@ nnoremap <silent> <Plug>JumpDiffCharPrevEnd
 nnoremap <silent> <Plug>JumpDiffCharNextEnd
 				\ :call diffchar#JumpDiffChar(1, 1)<CR>
 if !hasmapto('<Plug>ToggleDiffCharAllLines', 'nv')
+if empty(maparg('<F7>', 'nv'))
 	map <silent> <F7> <Plug>ToggleDiffCharAllLines
 endif
+endif
 if !hasmapto('<Plug>ToggleDiffCharCurrentLine', 'nv')
+if empty(maparg('<F8>', 'nv'))
 	map <silent> <F8> <Plug>ToggleDiffCharCurrentLine
+endif
 endif
 if !hasmapto('<Plug>JumpDiffCharPrevStart', 'n')
 	nmap <silent> [b <Plug>JumpDiffCharPrevStart
@@ -110,7 +114,7 @@ endif
 " Set an event group of this plugin
 augroup diffchar
 au!
-au! FilterWritePre * call diffchar#SetDiffModeSync()
+au! FilterWritePost * call diffchar#SetDiffModeSync()
 augroup END
 
 let &cpo = s:save_cpo

@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2016/10/22
-Version:     6.4
+Last Change: 2016/12/23
+Version:     6.5
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -98,10 +98,10 @@ COMMANDS                                               *diffchar-commands*
 -----------------------------------------------------------------------------
 KEYMAPS                                                *diffchar-keymaps*
 
-<Plug>ToggleDiffCharAllLines (default: <F7>)
+<Plug>ToggleDiffCharAllLines (default: <F7> if not mapped)
     Toggle to show/reset the highlights for all/selected lines
 
-<Plug>ToggleDiffCharCurrentLine (default: <F8>)
+<Plug>ToggleDiffCharCurrentLine (default: <F8> if not mapped)
     Toggle to show/reset the highlights for current/selected lines
 
 <Plug>JumpDiffCharPrevStart (default: [b)
@@ -162,6 +162,22 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 6.5
+* Enhanced:
+  - if DiffModeSync is enabled (default), whenever a window becomes or loses
+    diff mode, refresh to select the corresponding 2 diff mode windows and
+    then show the DiffChar highlights.
+  - if DiffUpdate is enabled (default), interactively update the DiffChar
+    highlights in a split window while editing in any of other split windows.
+  - when a split window is closed, switch the existing DiffChar highlights
+    to a remaining split window.
+* Fixed:
+  - mapped <F7> and <F8> keys as a default even if they were already mapped.
+  - did not update the plugin's specific color when changing color scheme.
+  - did not clear a diff pair cursor when the cursor moved to another window.
+  - lost the control of the DiffChar highlights when opening the same file
+    in different tab pages.
 
 Update : 6.4
 * Fixed:
