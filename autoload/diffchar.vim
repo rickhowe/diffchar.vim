@@ -51,6 +51,7 @@ function! s:InitializeDiffChar(...)
 					\ highlighted in tab page ' . tp . '!'
 			return -1
 		endif
+		unlet tc
 	endfor
 
 	" define a DiffChar dictionary on this tab page
