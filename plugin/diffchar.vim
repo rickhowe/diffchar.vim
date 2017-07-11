@@ -8,22 +8,27 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2016/12/23
-" Version:     6.5
+" Last Change: 2017/07/11
+" Version:     6.6
 " Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar')
 	finish
 endif
-let g:loaded_diffchar = 6.5
+let g:loaded_diffchar = 6.6
 
 let s:save_cpo = &cpo
 set cpo&vim
 
 " Commands
-command! -range SDChar call diffchar#ShowDiffChar(range(<line1>, <line2>))
-command! -range RDChar call diffchar#ResetDiffChar(range(<line1>, <line2>))
-command! -range TDChar call diffchar#ToggleDiffChar(range(<line1>, <line2>))
+command! -range -bar SDChar
+				\ call diffchar#ShowDiffChar(range(<line1>, <line2>))
+command! -range -bar RDChar
+				\ call diffchar#ResetDiffChar(range(<line1>, <line2>))
+command! -range -bar TDChar
+				\ call diffchar#ToggleDiffChar(range(<line1>, <line2>))
+command! -range -bar -bang EDChar
+				\ call diffchar#EchoDiffChar(range(<line1>, <line2>), <bang>1)
 
 " Configurable Keymaps
 noremap <silent> <Plug>ToggleDiffCharAllLines :%TDChar<CR>
@@ -104,7 +109,7 @@ endif
 
 " Set this plugin's DiffCharExpr() to the diffexpr option if empty
 if !exists('g:DiffExpr')
-let g:DiffExpr = 1		" enable
+let g:DiffExpr = 1			" enable
 " let g:DiffExpr = 0		" disable
 endif
 if g:DiffExpr && empty(&diffexpr)
@@ -119,3 +124,5 @@ augroup END
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
+
+" vim: ts=4 sw=4

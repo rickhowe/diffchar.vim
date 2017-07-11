@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2016/12/23
-Version:     6.5
+Last Change: 2016/07/11
+Version:     6.6
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -46,6 +46,13 @@ corresponding changed units between two windows. As a default, all the
 changed units are highlighted with DiffText. In addition, DiffAdd is always
 used for the added units and both the previous and next character of the
 deleted units are shown in bold/underline.
+
+In order to check the actual differences in a line, you can use |:EDChar|
+command and echo the lines for range. A changed, added, and deleted unit
+is shown as [-...-][+...+], [+...+], and [-...-] respectively,
+while showing its highlight. When [!] is not used, this command tries to
+shorten some equivalent units and show ... instead, if the line is
+too long to fit on the command line.
 
 This plugin traces the differences based on a |g:DiffUnit|. Its default is
 'Word1' and it handles a \w\+ word and a \W character as a difference unit.
@@ -91,9 +98,19 @@ This plugin has been always positively supporting mulltibyte characters.
 -----------------------------------------------------------------------------
 COMMANDS                                               *diffchar-commands*
 
-:[range]SDChar - Show the highlights of difference units for [range]
-:[range]RDChar - Reset the highlights of difference units for [range]
-:[range]TDChar - Toggle to show/reset the highlights for [range]
+:[range]SDChar
+    Show the highlights of difference units for [range]
+
+:[range]RDChar
+    Reset the highlights of difference units for [range]
+
+:[range]TDChar
+    Toggle to show/reset the highlights for [range]
+
+:[range]EDChar[!]
+    Echo the line, by enclosing added/deleted units in `[+...+]`/`[-...-]`,
+    for [range]. Some equivalent units may be shown as `...`.
+    When [!] is used, the lines will not be truncated.
 
 -----------------------------------------------------------------------------
 KEYMAPS                                                *diffchar-keymaps*
@@ -162,6 +179,10 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 6.6
+* Defined a new :EDChar command to echo the line by enclosing added/deleted
+  units in [+...+]/[-...-].
 
 Update : 6.5
 * Enhanced:
