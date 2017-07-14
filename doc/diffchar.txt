@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2016/07/11
-Version:     6.6
+Last Change: 2017/07/14
+Version:     6.7
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -179,6 +179,9 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 6.7
+* Fixed some defects on the :EDChar command.
 
 Update : 6.6
 * Defined a new :EDChar command to echo the line by enclosing added/deleted

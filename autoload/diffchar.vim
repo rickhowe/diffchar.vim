@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2017/07/11
-" Version:     6.6
+" Last Change: 2017/07/14
+" Version:     6.7
 " Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 let s:save_cpo = &cpo
@@ -941,25 +941,16 @@ function! diffchar#EchoDiffChar(lines, short)
 		let at = getbufline(winbufnr(t:DChar.win[ak]), al)[0]
 		let bt = getbufline(winbufnr(t:DChar.win[bk]), bl)[0]
 
-		let hl = repeat(['C'], len(at))
-		let tx = map(range(len(at)), 'at[v:key]')
-		let dn = 0
-		for an in range(len(t:DChar.hlc[ak][al]))
+		let hl = repeat('C', len(at))
+		let tx = at
+		for an in range(len(t:DChar.hlc[ak][al]) - 1, 0, -1)
 			let [ae, ac] = t:DChar.hlc[ak][al][an]
 			" enclose highlight and text in '[+' and '+]'
 			if ae == 'a' || ae == 'c'
-				let hl[ac[0] - 1 : ac[1] - 1] =
-						\repeat([ae == 'a' ? 'A' : 'T'], ac[1] - ac[0] + 1)
-				let it = '[+'
+				let it = '[+' . at[ac[0] - 1 : ac[1] - 1] . '+]'
 				let ih = repeat(ae == 'a' ? 'A' : 'T', len(it))
-				let ix = ac[0] - 1
-				let hl[ix] = ih . hl[ix]
-				let tx[ix] = it . tx[ix]
-				let it = '+]'
-				let ih = repeat(ae == 'a' ? 'A' : 'T', len(it))
-				let ix = ac[1] - 1
-				let hl[ix] .= ih
-				let tx[ix] .= it
+				let hl = (1 < ac[0] ? hl[: ac[0] - 2] : '') . ih . hl[ac[1] :]
+				let tx = (1 < ac[0] ? tx[: ac[0] - 2] : '') . it . tx[ac[1] :]
 			endif
 			" enclose corresponding changed/deleted units in '[-' and '-]'
 			" and insert them to highlight and text
@@ -968,44 +959,42 @@ function! diffchar#EchoDiffChar(lines, short)
 				let it = '[-' . bt[bc[0] - 1 : bc[1] - 1] . '-]'
 				let ih = repeat('D', len(it))
 				if ae == 'c'
-					let ix = ac[0] - 1
-					let hl[ix] = ih . hl[ix]
-					let tx[ix] = it . tx[ix]
+					let hl = (1 < ac[0] ? hl[: ac[0] - 2] : '') . ih .
+															\hl[ac[0] - 1 :]
+					let tx = (1 < ac[0] ? tx[: ac[0] - 2] : '') . it .
+															\tx[ac[0] - 1 :]
 				else
-					if dn == 0 && ac == [1, 1]
-						let ix = 0
-						let hl[ix] = ih . hl[ix]
-						let tx[ix] = it . tx[ix]
+					if ac[0] == 1 && bc[0] == 1
+						let hl = ih . hl
+						let tx = it . tx
 					else
 						let ix = ac[0] +
 									\len(matchstr(at[ac[0] - 1 :], '^.')) - 2
-						let hl[ix] .= ih
-						let tx[ix] .= it
+						let hl = hl[: ix] . ih . hl[ix + 1 :]
+						let tx = tx[: ix] . it . tx[ix + 1 :]
 					endif
-					let dn += 1
 				endif
 			endif
 		endfor
 
-		let [ha, ta] = [join(hl, ''), join(tx, '')]
-		let sm = a:short && strdisplaywidth(ta) >= &columns
+		let sm = a:short && strdisplaywidth(tx) >= &columns
 		let ix = 0
 		let tn = 0
 		echo ''
-		for h in split(ha,'\%(\(.\)\1*\)\zs')
+		for h in split(hl,'\%(\(.\)\1*\)\zs')
 			if h[0] == 'T'
 				exec 'echohl ' . t:DChar.dmc[tn % len(t:DChar.dmc)]
 				let tn += 1
 			else
 				exec 'echohl ' . s:DCharHL[h[0]]
 			endif
-			let t = ta[ix : ix + len(h) - 1]
+			let t = tx[ix : ix + len(h) - 1]
 			if sm && h[0] == 'C'
 				let s = split(t, '\zs')
 				if ix == 0 &&
 						\len(s) > 1 && strdisplaywidth(join(s[: -2], '')) > 3
 					let t = '...' . s[-1]
-				elseif ix + len(h) == len(ta) &&
+				elseif ix + len(h) == len(tx) &&
 						\len(s) > 1 && strdisplaywidth(join(s[1 :], '')) > 3
 					let t = s[0] . '...'
 				elseif len(s) > 2 && strdisplaywidth(join(s[1 : -2], '')) > 3
