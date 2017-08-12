@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2017/07/14
-" Version:     6.7
+" Last Change: 2017/08/12
+" Version:     6.8
 " Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar')
 	finish
 endif
-let g:loaded_diffchar = 6.7
+let g:loaded_diffchar = 6.8
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -42,14 +42,14 @@ nnoremap <silent> <Plug>JumpDiffCharPrevEnd
 nnoremap <silent> <Plug>JumpDiffCharNextEnd
 				\ :call diffchar#JumpDiffChar(1, 1)<CR>
 if !hasmapto('<Plug>ToggleDiffCharAllLines', 'nv')
-if empty(maparg('<F7>', 'nv'))
-	map <silent> <F7> <Plug>ToggleDiffCharAllLines
-endif
+	if empty(maparg('<F7>', 'nv'))
+		map <silent> <F7> <Plug>ToggleDiffCharAllLines
+	endif
 endif
 if !hasmapto('<Plug>ToggleDiffCharCurrentLine', 'nv')
-if empty(maparg('<F8>', 'nv'))
-	map <silent> <F8> <Plug>ToggleDiffCharCurrentLine
-endif
+	if empty(maparg('<F8>', 'nv'))
+		map <silent> <F8> <Plug>ToggleDiffCharCurrentLine
+	endif
 endif
 if !hasmapto('<Plug>JumpDiffCharPrevStart', 'n')
 	nmap <silent> [b <Plug>JumpDiffCharPrevStart
@@ -66,60 +66,67 @@ endif
 
 " Set a difference unit type
 if !exists('g:DiffUnit')
-let g:DiffUnit = 'Word1'	" \w\+ word and any \W single character
-" let g:DiffUnit = 'Word2'	" non-space and space words
-" let g:DiffUnit = 'Word3'	" \< or \> character class boundaries
-" let g:DiffUnit = 'Char'	" any single character
-" let g:DiffUnit = 'CSV(,)'	" split characters
+	let g:DiffUnit = 'Word1'	" \w\+ word and any \W single character
+	" let g:DiffUnit = 'Word2'	" non-space and space words
+	" let g:DiffUnit = 'Word3'	" \< or \> character class boundaries
+	" let g:DiffUnit = 'Char'	" any single character
+	" let g:DiffUnit = 'CSV(,)'	" split characters
 endif
 
 " Set a difference unit matching colors
 if !exists('g:DiffColors')
-let g:DiffColors = 0		" always 1 color
-" let g:DiffColors = 1		" 4 colors in fixed order
-" let g:DiffColors = 2		" 8 colors in fixed order
-" let g:DiffColors = 3		" 16 colors in fixed order
-" let g:DiffColors = 100	" all available colors in dynamic random order
+	let g:DiffColors = 0		" always 1 color
+	" let g:DiffColors = 1		" 4 colors in fixed order
+	" let g:DiffColors = 2		" 8 colors in fixed order
+	" let g:DiffColors = 3		" 16 colors in fixed order
+	" let g:DiffColors = 100	" all available colors in dynamic random order
 endif
 
 " Make a corresponding unit visible when cursor is moved on a diff unit
 if !exists('g:DiffPairVisible')
-let g:DiffPairVisible = 2	" cursor-like highlight + echo
-" let g:DiffPairVisible = 1	" cursor-like highlight
-" let g:DiffPairVisible = 0	" nothing visible
+	let g:DiffPairVisible = 2	" cursor-like highlight + echo
+	" let g:DiffPairVisible = 1	" cursor-like highlight
+	" let g:DiffPairVisible = 0	" nothing visible
 endif
 
 " Set a difference unit updating while editing
 if !exists('g:DiffUpdate')
-let g:DiffUpdate = 1		" enable
-" let g:DiffUpdate = 0		" disable
+	let g:DiffUpdate = 1		" enable
+	" let g:DiffUpdate = 0		" disable
 endif
 
 " Set a time length (ms) to apply this plugin's internal algorithm first
 if !exists('g:DiffSplitTime')
-let g:DiffSplitTime = 100	" when timeout, split to diff command
-" let g:DiffSplitTime = 0	" always apply diff command only
+	let g:DiffSplitTime = 100	" when timeout, split to diff command
+	" let g:DiffSplitTime = 0	" always apply diff command only
 endif
 
 " Set a diff mode synchronization to show/reset exact differences
 if !exists('g:DiffModeSync')
-let g:DiffModeSync = 1		" enable
-" let g:DiffModeSync = 0	" disable
+	let g:DiffModeSync = 1		" enable
+	" let g:DiffModeSync = 0	" disable
 endif
 
 " Set this plugin's DiffCharExpr() to the diffexpr option if empty
 if !exists('g:DiffExpr')
-let g:DiffExpr = 1			" enable
-" let g:DiffExpr = 0		" disable
+	let g:DiffExpr = 1			" enable
+	" let g:DiffExpr = 0		" disable
 endif
 if g:DiffExpr && empty(&diffexpr)
-let &diffexpr = 'diffchar#DiffCharExpr()'
+	let &diffexpr = 'diffchar#DiffCharExpr()'
 endif
 
 " Set an event group of this plugin
 augroup diffchar
-au!
-au! FilterWritePost * call diffchar#SetDiffModeSync()
+	au!
+	if has('patch-8.0.736')
+		au! OptionSet diff call diffchar#DetectDiffModeSync()
+	else
+		au! FilterWritePost * call diffchar#DetectDiffModeSync()
+	endif
+	if &diff
+		au! VimEnter * call diffchar#VimdiffDiffModeSync()
+	endif
 augroup END
 
 let &cpo = s:save_cpo

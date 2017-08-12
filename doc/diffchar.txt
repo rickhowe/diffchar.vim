@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2017/07/14
-Version:     6.7
+Last Change: 2017/08/12
+Version:     6.8
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -179,6 +179,15 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 6.8
+* Changed to make use of an OptionSet event to detect diff mode for
+  DiffModeSync as it is implemented in patch 8.0.736.
+* Changed to completely reset all the DiffChar highlights and autocmd events
+  when other window/tabpage than current one is closed by quit, close,
+  tabclose or tabonly commands.
+* Fixed to avoid "E788: Not allowed to edit anoter buffer now" error happend
+  on patch 8.0.736.
 
 Update : 6.7
 * Fixed some defects on the :EDChar command.
