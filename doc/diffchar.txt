@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2017/08/12
-Version:     6.8
+Last Change: 2017/08/22
+Version:     6.9
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -179,6 +179,12 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 6.9
+* Fixed some regressions on 6.8:
+  - if DiffModeSync is enabled (default), when :diffupdate command is executed
+    or icase/iwhite of 'diffopt' option is changed, the diff highlights are
+    not synchronously updated.
 
 Update : 6.8
 * Changed to make use of an OptionSet event to detect diff mode for

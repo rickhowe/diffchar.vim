@@ -1,4 +1,4 @@
-" diffchar.vim : Highlight the exact differences, based on characters and words
+" diffchar.vim: Highlight the exact differences, based on characters and words
 "
 "  ____   _  ____  ____  _____  _   _  _____  ____   
 " |    | | ||    ||    ||     || | | ||  _  ||  _ |  
@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2017/08/12
-" Version:     6.8
+" Last Change: 2017/08/22
+" Version:     6.9
 " Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar')
 	finish
 endif
-let g:loaded_diffchar = 6.8
+let g:loaded_diffchar = 6.9
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -119,11 +119,7 @@ endif
 " Set an event group of this plugin
 augroup diffchar
 	au!
-	if has('patch-8.0.736')
-		au! OptionSet diff call diffchar#DetectDiffModeSync()
-	else
-		au! FilterWritePost * call diffchar#DetectDiffModeSync()
-	endif
+	au! FilterWritePost * call diffchar#SetDiffModeSync()
 	if &diff
 		au! VimEnter * call diffchar#VimdiffDiffModeSync()
 	endif
