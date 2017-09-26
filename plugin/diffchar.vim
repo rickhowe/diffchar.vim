@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2017/08/22
-" Version:     6.9
-" Author:      Rick Howe <rdcxy754@ybb.ne.jp>
+" Last Change:	2017/09/26
+" Version:		7.0
+" Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
-if exists('g:loaded_diffchar')
+if exists('g:loaded_diffchar') || !has('diff')
 	finish
 endif
-let g:loaded_diffchar = 6.9
+let g:loaded_diffchar = '7.0'
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -34,13 +34,17 @@ command! -range -bar -bang EDChar
 noremap <silent> <Plug>ToggleDiffCharAllLines :%TDChar<CR>
 noremap <silent> <Plug>ToggleDiffCharCurrentLine :TDChar<CR>
 nnoremap <silent> <Plug>JumpDiffCharPrevStart
-				\ :call diffchar#JumpDiffChar(0, 0)<CR>
+									\ :call diffchar#JumpDiffChar(0, 0)<CR>
 nnoremap <silent> <Plug>JumpDiffCharNextStart
-				\ :call diffchar#JumpDiffChar(1, 0)<CR>
+									\ :call diffchar#JumpDiffChar(1, 0)<CR>
 nnoremap <silent> <Plug>JumpDiffCharPrevEnd
-				\ :call diffchar#JumpDiffChar(0, 1)<CR>
+									\ :call diffchar#JumpDiffChar(0, 1)<CR>
 nnoremap <silent> <Plug>JumpDiffCharNextEnd
-				\ :call diffchar#JumpDiffChar(1, 1)<CR>
+									\ :call diffchar#JumpDiffChar(1, 1)<CR>
+nnoremap <silent> <Plug>GetDiffCharPair
+									\ :call diffchar#CopyDiffCharPair(0)<CR>
+nnoremap <silent> <Plug>PutDiffCharPair
+									\ :call diffchar#CopyDiffCharPair(1)<CR>
 if !hasmapto('<Plug>ToggleDiffCharAllLines', 'nv')
 	if empty(maparg('<F7>', 'nv'))
 		map <silent> <F7> <Plug>ToggleDiffCharAllLines
@@ -62,6 +66,12 @@ if !hasmapto('<Plug>JumpDiffCharPrevEnd', 'n')
 endif
 if !hasmapto('<Plug>JumpDiffCharNextEnd', 'n')
 	nmap <silent> ]e <Plug>JumpDiffCharNextEnd
+endif
+if !hasmapto('<Plug>GetDiffCharPair', 'n')
+	nmap <silent> <Leader>g <Plug>GetDiffCharPair
+endif
+if !hasmapto('<Plug>PutDiffCharPair', 'n')
+	nmap <silent> <Leader>p <Plug>PutDiffCharPair
 endif
 
 " Set a difference unit type
@@ -120,9 +130,6 @@ endif
 augroup diffchar
 	au!
 	au! FilterWritePost * call diffchar#SetDiffModeSync()
-	if &diff
-		au! VimEnter * call diffchar#VimdiffDiffModeSync()
-	endif
 augroup END
 
 let &cpo = s:save_cpo

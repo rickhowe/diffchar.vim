@@ -41,11 +41,13 @@ used for the added units and both the previous and next character of the
 deleted units are shown in bold/underline.
 
 In order to check the actual differences in a line, you can use `:EDChar`
-command and echo the lines for range. A changed, added, and deleted unit
-is shown as `[-...-][+...+]`, `[+...+]`, and `[-...-]` respectively,
-while showing its highlight. When [!] is not used, this command tries to
-shorten some equivalent units and show `...` instead, if the line is
-too long to fit on the command line.
+command and echo the lines for range. A changed, added, and deleted unit is
+shown as `[-...-][+...+]`, `[+...+]`, and `[-...-]` respectively, while showing its
+highlight. If a strike highlighting is available such as on GUI and some
+terminal, the deleted unit is highlighted with the strike instead and `[+`, `+]`,
+`[-`, and `-]` are eliminated. This command tries to shorten some equivalent units
+and show `...` instead, if the line is too long to fit on the command line.
+When [!] is used, nothing is shorten and all lines are displayed.
 
 This plugin traces the differences based on a `g:DiffUnit`. Its default is
 'Word1' and it handles a \w\\+ word and a \W character as a difference unit.
@@ -63,6 +65,9 @@ unit. Those keymaps, `<F7>` and `<F8>` are configurable in your vimrc and so on.
 
 This plugin always keeps the exact differences updated while editing if a
 `g:DiffUpdate` is enabled and TextChanged/TextChangedI events are available.
+Like line-based `diffget`/`diffput` and `do`/`dp` vim commands, you can use
+`<Leader>g` and `<Leader>p` commands in normal mode to get and put each difference
+unit, where the cursor is on, between 2 buffers and undo its difference.
 
 This plugin has been using "An O(NP) Sequence Comparison Algorithm" developed
 by S.Wu, et al., which always finds an optimum sequence quickly. But for
@@ -97,9 +102,9 @@ This plugin has been always positively supporting mulltibyte characters.
 * `:[range]TDChar`
   * Toggle to show/reset the highlights for [range]
 * `:[range]EDChar[!]`
-  * Echo the line, by enclosing added/deleted units in `[+...+]`/`[-...-]`,
-    for [range]. Some equivalent units may be shown as `...`.
-    When [!] is used, the lines will not be truncated.
+  * Echo the line for [range], by showing each corresponding unit together
+    in `[+...+]`/`[-...-]` or strike highlighting. Some equivalent units may be
+    shown as `...`. When [!] is used, all lines and all units are displayed.
 
 #### Keymaps
 
@@ -115,6 +120,10 @@ This plugin has been always positively supporting mulltibyte characters.
   * Jump cursor to the end position of the previous difference unit
 * `<Plug>JumpDiffCharNextEnd` (default: `]e`)
   * Jump cursor to the end position of the next difference unit
+* `<Plug>GetDiffCharPair` (default: `<Leader>g`)
+  * Get a corresponding difference unit from another buffer to undo difference
+* `<Plug>PutDiffCharPair` (default: `<Leader>p`)
+  * Put a corresponding difference unit to another buffer to undo difference
 
 #### Options
 
@@ -162,9 +171,14 @@ This plugin has been always positively supporting mulltibyte characters.
 
 :let t:DiffColors = 3
 :windo diffthis | windo set wrap
-:EDChar          " on line 3 in the left window
-:EDChar!
-<space>          " cursor move forward on line 5 in the left window
-]b               " several times on line 7 in the left window
+:EDChar          " echo line 3 together with corresponding difference unit
+
+<space>          " move cursor forward on line 1 and
+<space>          " make its corresponding unit pair visible
+...
+]b\g             " jump to the next difference unit on line 3 and
+]b\g             " get each unit pair from another buffer to undo difference
+...
+
 :diffoff!
 ```
