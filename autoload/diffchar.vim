@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2017/09/26
-" Version:		7.0
+" Last Change:	2017/09/27
+" Version:		7.01
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
 let s:save_cpo = &cpo
@@ -25,7 +25,7 @@ let s:VF = {
 	\'TextChanged': exists('##TextChanged'),
 	\'TextChangedI': exists('##TextChangedI'),
 	\'MatchaddPos': exists('*matchaddpos'),
-	\'GUI': has('gui_running'),
+	\'GUI': &term == 'builtin_gui' || &termguicolors,
 	\'Timers': has('timers'),
 	\'DiffHLUnhidden': has('patch-7.4.682'),
 	\'WindowID': has('patch-7.4.1895'),
