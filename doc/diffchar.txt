@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2017/09/26
-Version:     7.0
+Last Change: 2017/10/25
+Version:     7.1
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -190,6 +190,12 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 7.1
+* Implemented a workaround for some defects and recent changes of vim,
+  including gettabvar() (patch 8.0.1160), matchadd() (8.0.1168) and
+  QuitPre (8.0.1204).
+* Fixed some defects.
 
 Update : 7.0
 * Defined new normal mode commands, <Leader>g and <Leader>p, to get and put
