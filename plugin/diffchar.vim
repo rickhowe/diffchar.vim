@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2017/10/25
-" Version:		7.1
+" Last Change:	2017/11/05
+" Version:		7.2
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar') || !has('diff')
 	finish
 endif
-let g:loaded_diffchar = '7.1'
+let g:loaded_diffchar = '7.2'
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -31,48 +31,26 @@ command! -range -bar -bang EDChar
 				\ call diffchar#EchoDiffChar(range(<line1>, <line2>), <bang>1)
 
 " Configurable Keymaps
-noremap <silent> <Plug>ToggleDiffCharAllLines :%TDChar<CR>
-noremap <silent> <Plug>ToggleDiffCharCurrentLine :TDChar<CR>
-nnoremap <silent> <Plug>JumpDiffCharPrevStart
-									\ :call diffchar#JumpDiffChar(0, 0)<CR>
-nnoremap <silent> <Plug>JumpDiffCharNextStart
-									\ :call diffchar#JumpDiffChar(1, 0)<CR>
-nnoremap <silent> <Plug>JumpDiffCharPrevEnd
-									\ :call diffchar#JumpDiffChar(0, 1)<CR>
-nnoremap <silent> <Plug>JumpDiffCharNextEnd
-									\ :call diffchar#JumpDiffChar(1, 1)<CR>
-nnoremap <silent> <Plug>GetDiffCharPair
-									\ :call diffchar#CopyDiffCharPair(0)<CR>
-nnoremap <silent> <Plug>PutDiffCharPair
-									\ :call diffchar#CopyDiffCharPair(1)<CR>
-if !hasmapto('<Plug>ToggleDiffCharAllLines', 'nv')
-	if empty(maparg('<F7>', 'nv'))
-		map <silent> <F7> <Plug>ToggleDiffCharAllLines
+for [key, plg, cmd] in [
+	\['<F7>', '<Plug>ToggleDiffCharAllLines', ':%TDChar'],
+	\['<F8>', '<Plug>ToggleDiffCharCurrentLine', ':TDChar'],
+	\['[b', '<Plug>JumpDiffCharPrevStart',
+									\':call diffchar#JumpDiffChar(0, 0)'],
+	\[']b', '<Plug>JumpDiffCharNextStart',
+									\':call diffchar#JumpDiffChar(1, 0)'],
+	\['[e', '<Plug>JumpDiffCharPrevEnd',
+									\':call diffchar#JumpDiffChar(0, 1)'],
+	\[']e', '<Plug>JumpDiffCharNextEnd',
+									\':call diffchar#JumpDiffChar(1, 1)'],
+	\['<Leader>g', '<Plug>GetDiffCharPair',
+									\':call diffchar#CopyDiffCharPair(0)'],
+	\['<Leader>p', '<Plug>PutDiffCharPair',
+									\':call diffchar#CopyDiffCharPair(1)']]
+	if !hasmapto(plg, 'n') && empty(maparg(key, 'n'))
+		exec 'nmap <silent> ' . key . ' ' . plg
 	endif
-endif
-if !hasmapto('<Plug>ToggleDiffCharCurrentLine', 'nv')
-	if empty(maparg('<F8>', 'nv'))
-		map <silent> <F8> <Plug>ToggleDiffCharCurrentLine
-	endif
-endif
-if !hasmapto('<Plug>JumpDiffCharPrevStart', 'n')
-	nmap <silent> [b <Plug>JumpDiffCharPrevStart
-endif
-if !hasmapto('<Plug>JumpDiffCharNextStart', 'n')
-	nmap <silent> ]b <Plug>JumpDiffCharNextStart
-endif
-if !hasmapto('<Plug>JumpDiffCharPrevEnd', 'n')
-	nmap <silent> [e <Plug>JumpDiffCharPrevEnd
-endif
-if !hasmapto('<Plug>JumpDiffCharNextEnd', 'n')
-	nmap <silent> ]e <Plug>JumpDiffCharNextEnd
-endif
-if !hasmapto('<Plug>GetDiffCharPair', 'n')
-	nmap <silent> <Leader>g <Plug>GetDiffCharPair
-endif
-if !hasmapto('<Plug>PutDiffCharPair', 'n')
-	nmap <silent> <Leader>p <Plug>PutDiffCharPair
-endif
+	exec 'nnoremap <silent> ' plg . ' ' . cmd . '<CR>'
+endfor
 
 " Set a difference unit type
 if !exists('g:DiffUnit')

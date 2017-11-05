@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2017/10/25
-" Version:		7.1
+" Last Change:	2017/11/05
+" Version:		7.2
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
 let s:save_cpo = &cpoptions
@@ -490,12 +490,13 @@ function! s:TraceDiffChar(u1, u2, ...) abort
 
 	" create a shortest edit script (SES) from last p and k
 	let ses = ''
-	while p != 0 || k != 0
-		let [e, p, k] = etree[p][k]
-		let ses = e . ses
+	while 1
+		let ses = etree[p][k][0] . ses
+		if p == 0 && k == 0
+			return ses[1:]		" remove the first entry
+		endif
+		let [p, k] = etree[p][k][1:2]
 	endwhile
-	let ses = etree[p][k][0] . ses
-	return ses[1:]		" remove the first entry
 endfunction
 
 function! diffchar#ResetDiffChar(...) abort
@@ -565,17 +566,16 @@ function! s:ToggleDiffCharEvent(on) abort
 		let ac += [['ColorScheme', '*', 's:DefineDiffCharHL()']]
 	endif
 	if exists('t:DChar.dml') && t:DChar.dms
-		if s:VF.DiffOptionSet
-			let ep = ['OptionSet', 'diff']
-		else
-			let ep = ['CursorHold', '*']
-			call s:ChangeUTOption(a:on)
-		endif
 		if empty(filter(td, 'exists("v:val.dml") && v:val.dms'))
-			" save command to recover later in SwitchDiffChar()
-			let s:save_ch = a:on ? 's:ResetDiffModeSync()' : ''
-			let ac += [ep + [s:save_ch]]
+			if s:VF.DiffOptionSet
+				let ac += [['OptionSet', 'diff', 's:ResetDiffModeSync()']]
+			else
+				" save command to recover later in SwitchDiffChar()
+				let s:save_ch = a:on ? 's:ResetDiffModeSync()' : ''
+				let ac += [['CursorHold', '*', s:save_ch]]
+			endif
 		endif
+		if !s:VF.DiffOptionSet | call s:ChangeUTOption(a:on) | endif
 	endif
 	for [ev, pt, cd] in ac
 		exec 'au! diffchar ' . ev . ' ' . pt . (a:on ? ' call ' . cd : '')
@@ -1055,9 +1055,9 @@ function! s:BuiltinAlgorithmExpr(f1, f2) abort
 		else				" one or more '[+-]'
 			let q1 = len(substitute(ed, '+', '', 'g'))
 			let q2 = qn - q1
-			let dfcmd += [((1 < q1) ? l1 . ',' : '') . (l1 + q1 - 1) .
-								\((q1 == 0) ? 'a' : (q2 == 0) ? 'd' : 'c') .
-								\((1 < q2) ? l2 . ',' : '') . (l2 + q2 - 1)]
+			let dfcmd += [(1 < q1 ? l1 . ',' : '') . (l1 + q1 - 1) .
+								\(q1 == 0 ? 'a' : q2 == 0 ? 'd' : 'c') .
+									\(1 < q2 ? l2 . ',' : '') . (l2 + q2 - 1)]
 			let [l1, l2] += [q1, q2]
 		endif
 	endfor

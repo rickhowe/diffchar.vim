@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2017/10/25
-Version:     7.1
+Last Change: 2017/11/05
+Version:     7.2
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -120,10 +120,10 @@ COMMANDS                                               *diffchar-commands*
 -----------------------------------------------------------------------------
 KEYMAPS                                                *diffchar-keymaps*
 
-<Plug>ToggleDiffCharAllLines (default: <F7> if not mapped)
+<Plug>ToggleDiffCharAllLines (default: <F7>)
     Toggle to show/reset the highlights for all/selected lines
 
-<Plug>ToggleDiffCharCurrentLine (default: <F8> if not mapped)
+<Plug>ToggleDiffCharCurrentLine (default: <F8>)
     Toggle to show/reset the highlights for current/selected lines
 
 <Plug>JumpDiffCharPrevStart (default: [b)
@@ -190,6 +190,9 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 7.2
+* Fixed to map only the keys which have not been mapped.
 
 Update : 7.1
 * Implemented a workaround for some defects and recent changes of vim,
