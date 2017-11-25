@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2017/11/05
-Version:     7.2
+Last Change: 2017/11/25
+Version:     7.3
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -190,6 +190,12 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 7.3
+* Modified not to change the highlight option when drawing diffchar
+  highlightings as nvim 2.1 does not allow to change it.
+* Implemented a workaround for a defect of diff_hlID() in nvim 2.1.
+* Fixed to work DiffSplitTime correctly.
 
 Update : 7.2
 * Fixed to map only the keys which have not been mapped.

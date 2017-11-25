@@ -8,16 +8,16 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2017/11/05
-" Version:		7.2
+" Last Change:	2017/11/25
+" Version:		7.3
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar') || !has('diff')
 	finish
 endif
-let g:loaded_diffchar = '7.2'
+let g:loaded_diffchar = 7.3
 
-let s:save_cpo = &cpo
+let s:save_cpo = &cpoptions
 set cpo&vim
 
 " Commands
@@ -27,7 +27,7 @@ command! -range -bar RDChar
 				\ call diffchar#ResetDiffChar(range(<line1>, <line2>))
 command! -range -bar TDChar
 				\ call diffchar#ToggleDiffChar(range(<line1>, <line2>))
-command! -range -bar -bang EDChar
+command! -range -bang -bar EDChar
 				\ call diffchar#EchoDiffChar(range(<line1>, <line2>), <bang>1)
 
 " Configurable Keymaps
@@ -47,9 +47,9 @@ for [key, plg, cmd] in [
 	\['<Leader>p', '<Plug>PutDiffCharPair',
 									\':call diffchar#CopyDiffCharPair(1)']]
 	if !hasmapto(plg, 'n') && empty(maparg(key, 'n'))
-		exec 'nmap <silent> ' . key . ' ' . plg
+		execute 'nmap <silent> ' . key . ' ' . plg
 	endif
-	exec 'nnoremap <silent> ' plg . ' ' . cmd . '<CR>'
+	execute 'nnoremap <silent> ' plg . ' ' . cmd . '<CR>'
 endfor
 
 " Set a difference unit type
@@ -106,11 +106,11 @@ endif
 
 " Set an event group of this plugin
 augroup diffchar
-	au!
-	au! FilterWritePost * call diffchar#SetDiffModeSync()
+	autocmd!
+	autocmd! FilterWritePost * call diffchar#SetDiffModeSync()
 augroup END
 
-let &cpo = s:save_cpo
+let &cpoptions = s:save_cpo
 unlet s:save_cpo
 
 " vim: ts=4 sw=4
