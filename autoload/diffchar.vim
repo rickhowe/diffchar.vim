@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2017/11/25
-" Version:		7.3
+" Last Change:	2017/11/26
+" Version:		7.31
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
 let s:save_cpo = &cpoptions
@@ -490,7 +490,6 @@ function! s:ToggleDiffCharEvent(on)
 	if empty(td)
 		let ac += [['WinEnter', '*', 's:SweepInvalidDiffChar()']]
 		let ac += [['TabEnter', '*', 's:AdjustGlobalOption()']]
-		"let ac += [['ColorScheme', '*', 's:DefineDiffCharHL()']]
 	endif
 	if exists('t:DChar.dml') && t:DChar.dms
 		if empty(filter(td, 'exists("v:val.dml") && v:val.dms'))
@@ -1201,6 +1200,7 @@ function! s:SweepInvalidDiffChar()
 		" sweep all event and initialize because no valid DChar exists
 		autocmd! diffchar
 		autocmd! diffchar FilterWritePost * call diffchar#SetDiffModeSync()
+		autocmd! diffchar ColorScheme * call s:DefineDiffCharHL()
 	else
 		" sweep remaining buffer specific event not belonging to any DChar
 		for bn in filter(range(1, bufnr('$')), 'index(db, v:val) == -1')
