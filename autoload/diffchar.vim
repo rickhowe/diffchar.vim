@@ -8,12 +8,60 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2017/11/26
-" Version:		7.31
+" Last Change:	2017/11/28
+" Version:		7.32
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
 let s:save_cpo = &cpoptions
 set cpo&vim
+
+if has('nvim')
+function! s:IsHLOptValid()
+	" nvim 2.1 has deprecated the history option.
+	" this function checks if the option is valid or not.
+	let hl = &highlight | let &highlight = ''
+	let ok = (&highlight == '') ? 1 : 0
+	let &highlight = hl
+	return ok
+endfunction
+
+function! s:IsDiffHLIDCorrect()
+	" in nvim 2.1, id returned by diff_hlID() = correct id - 1.
+	" this function checks if diff_hlID() still has problem or not.
+	if has_key(s:VF, 'DiffHLIDCorrect') | return s:VF.DiffHLIDCorrect | endif
+	let [da, dc, dt] =
+				\[hlID(s:DCharHL.A), hlID(s:DCharHL.oC), hlID(s:DCharHL.oT)]
+	let cwin = s:GetWID()
+	let ok = -1
+	let k = 1
+	while k <= 2 && ok < 0
+		call s:GotoWID(s:GetDiffCharWID()[k])
+		let l = 1
+		while l <= line('$') && ok < 0
+			let id = diff_hlID(l, 1)
+			if id == 0			" no HLID, then can not check
+			elseif id == dc || id == dt
+				let ok = 1		" C/T, then correct
+			elseif id == da
+				" A in part of columns, then incorrect
+				" A in all columns, then A/C uncertain
+				let ok = !empty(filter(range(1, col([l, '$'])),
+									\'diff_hlID(l, v:val) != id')) ? 0 : -2
+			else
+				let ok = 0		" other than A/C/T, then incorrect
+			endif
+			let l += 1
+		endwhile
+		let k += 1
+	endwhile
+	call s:GotoWID(cwin)
+	if ok == -2
+		let ok = 1				" still A/C uncertain means C, then correct
+	endif
+	if ok != -1 | let s:VF.DiffHLIDCorrect = ok | endif
+	return ok
+endfunction
+endif
 
 " Vim feature, function, event and patch number which this plugin depends on
 " patch-7.4.682:  diff highlight not hidden by matchadd()
@@ -36,7 +84,66 @@ let s:VF = {
 	\'StrikeAttr': has('patch-8.0.1038') &&
 					\(has('gui_running') || !empty(&t_Ts) && !empty(&t_Te)),
 	\'GettabvarFixed': has('patch-8.0.1160'),
-	\'QuitPreAbufFixed': has('patch-8.0.1204')}
+	\'QuitPreAbufFixed': has('patch-8.0.1204'),
+	\'HLOptValid': !has('nvim') || s:IsHLOptValid()}
+
+" set highlight groups used for diffchar
+let s:DCharHL = {'A': 'DiffAdd', 'oC': 'DiffChange', 'oT': 'DiffText',
+		\'Z': 'dcDiffAddPos', 'U': s:VF.GUIColors ? 'Cursor' : 'VertSplit'}
+let s:DCharHL = extend(s:DCharHL, s:VF.StrikeAttr ?
+		\{'oD': 'DiffDelete', 'D': 'dcDiffDelStr'} : {'D': 'DiffDelete'})
+let s:DCharHL = extend(s:DCharHL, s:VF.DiffHLUnhidden ? (s:VF.HLOptValid ?
+		\{'C': 'DiffChange', 'c': 'dcDiffChange',
+									\'T': 'DiffText', 't': 'dcDiffText'} :
+		\{'c': 'DiffChange', 'C': 'dcDiffChange',
+									\'t': 'DiffText', 'T': 'dcDiffText'}) :
+		\{'C': 'DiffChange', 'T': 'DiffText'})
+if s:VF.DiffHLUnhidden && !s:VF.HLOptValid | let s:DiffCTHL = {} | endif
+
+function! s:DefineDiffCharHL()
+	" dcDiffAddPos = DiffChange + bold and underline
+	" dcDiffDelStr = DiffDelete + strikethrough
+	" dcDiffChange = DiffChange with bg only or all
+	" dcDiffText = DiffText with nothing or all
+	for [fh, th, co, at] in
+				\ [['oC', 'Z', ['fg', 'bg', 'sp'], ['bold', 'underline']]] +
+			\(s:VF.StrikeAttr ?
+				\[['oD', 'D', ['fg', 'bg', 'sp'], ['strikethrough']]] : []) +
+			\(s:VF.DiffHLUnhidden ? (s:VF.HLOptValid ?
+						\[['C', 'c', ['bg'], ['-']], ['T', 't', [], ['-']]] :
+						\[['c', 'C', ['fg', 'bg', 'sp'], []],
+								\['t', 'T', ['fg', 'bg', 'sp'], []]]) : [])
+		let hd = hlID(s:DCharHL[fh])
+		let ha = []
+		for hm in ['term', 'cterm', 'gui']
+			if hm != 'term'
+				let ha += map(copy(co),
+							\'hm . v:val . "=" . synIDattr(hd, v:val, hm)')
+			endif
+			if at != ['-']
+				let ha += [hm . '=' . join(filter(
+						\['bold', 'italic', 'reverse', 'inverse', 'standout',
+								\'underline', 'undercurl', 'strikethrough'],
+									\'synIDattr(hd, v:val, hm)') + at, ',')]
+			endif
+		endfor
+		let hx = join(filter(ha, 'v:val !~ "=\\(-1\\)\\=$"'))
+		execute 'silent highlight clear ' . s:DCharHL[th]
+		execute 'silent highlight ' . s:DCharHL[th] . ' ' . hx
+		" set a dictionary for changing original DiffChange/DiffText
+		if s:VF.DiffHLUnhidden && !s:VF.HLOptValid
+			if th == 'C'				" 1: leave bg only
+				let s:DiffCTHL[fh] = {0: hx,
+									\1: join(filter(ha, 'v:val =~ "bg="'))}
+			elseif th == 'T'			" 1: leave noting
+				let s:DiffCTHL[fh] = {0: hx, 1: ''}
+			endif
+		endif
+	endfor
+	if s:VF.DiffHLUnhidden && !s:VF.HLOptValid
+		call s:ChangeHLOptDict(exists('t:DChar.ovd'))
+	endif
+endfunction
 
 function! s:InitializeDiffChar()
 	if min(tabpagebuflist()) == max(tabpagebuflist())
@@ -73,7 +180,7 @@ function! s:InitializeDiffChar()
 	" find corresponding DiffChange/DiffText lines on diff mode windows
 	if empty(filter(values(swin), '!getwinvar(v:val, "&diff")'))
 		let t:DChar.dml = {}
-		let [dc, dt] = [hlID(s:DCharHL.c), hlID(s:DCharHL.t)]
+		let [dc, dt] = [hlID(s:DCharHL.oC), hlID(s:DCharHL.oT)]
 		if has('nvim') && s:IsDiffHLIDCorrect() == 0
 			let [dc, dt] -= [1, 1]
 		endif
@@ -168,6 +275,8 @@ function! s:InitializeDiffChar()
 		endwhile
 		let t:DChar.hgp += values(hl)
 	endif
+
+	call s:DefineDiffCharHL()
 endfunction
 
 function! diffchar#ToggleDiffChar(lines)
@@ -490,6 +599,7 @@ function! s:ToggleDiffCharEvent(on)
 	if empty(td)
 		let ac += [['WinEnter', '*', 's:SweepInvalidDiffChar()']]
 		let ac += [['TabEnter', '*', 's:AdjustGlobalOption()']]
+		let ac += [['ColorScheme', '*', 's:DefineDiffCharHL()']]
 	endif
 	if exists('t:DChar.dml') && t:DChar.dms
 		if empty(filter(td, 'exists("v:val.dml") && v:val.dms'))
@@ -1200,7 +1310,6 @@ function! s:SweepInvalidDiffChar()
 		" sweep all event and initialize because no valid DChar exists
 		autocmd! diffchar
 		autocmd! diffchar FilterWritePost * call diffchar#SetDiffModeSync()
-		autocmd! diffchar ColorScheme * call s:DefineDiffCharHL()
 	else
 		" sweep remaining buffer specific event not belonging to any DChar
 		for bn in filter(range(1, bufnr('$')), 'index(db, v:val) == -1')
@@ -1306,7 +1415,7 @@ function! s:AdjustGlobalOption()
 		call s:ChangeUTOption(exists('t:DChar.dml') && t:DChar.dms)
 	endif
 	if s:VF.DiffHLUnhidden
-		call s:ChangeDiffCTHL(exists('t:DChar.ovd'))
+		call s:ChangeHLOptDict(exists('t:DChar.ovd'))
 	endif
 endfunction
 
@@ -1322,13 +1431,31 @@ endfunction
 endif
 
 if s:VF.DiffHLUnhidden
-function! s:ChangeDiffCTHL(on)
+if s:VF.HLOptValid
+function! s:ChangeHLOptDict(on)
+	if a:on
+		if !exists('s:save_hl')
+			let s:save_hl = &highlight
+			" mostly disable C and T and leave C-bg only
+			let &highlight =
+				\join(filter(split(&highlight, ','), 'v:val[0] !~# "[CT]"') +
+							\['C:' . s:DCharHL.c, 'T:' . s:DCharHL.t], ',')
+		endif
+	elseif exists('s:save_hl')
+		let &highlight = s:save_hl | unlet s:save_hl
+	endif
+endfunction
+
+else
+
+function! s:ChangeHLOptDict(on)
 	for hl in ['c', 't']
 		execute 'silent highlight clear ' . s:DCharHL[hl]
 		execute 'silent highlight ' . s:DCharHL[hl] . ' ' .
 														\s:DiffCTHL[hl][a:on]
 	endfor
 endfunction
+endif
 
 function! s:ToggleDiffHL(on)
 	if exists('t:DChar.dml')
@@ -1336,7 +1463,7 @@ function! s:ToggleDiffHL(on)
 			call s:RestoreDiffHL() | call s:OverdrawDiffHL()
 		else
 			call eval(a:on ? 's:OverdrawDiffHL()' : 's:RestoreDiffHL()')
-			call s:ChangeDiffCTHL(a:on)
+			call s:ChangeHLOptDict(a:on)
 		endif
 	endif
 endfunction
@@ -1345,7 +1472,7 @@ function! s:OverdrawDiffHL()
 	" overdraw DiffChange/DiffText area with its match
 	if exists('t:DChar.ovd') | return | endif
 	let t:DChar.ovd = 1
-	let [dc, dt] = [hlID(s:DCharHL.c), hlID(s:DCharHL.t)]
+	let [dc, dt] = [hlID(s:DCharHL.oC), hlID(s:DCharHL.oT)]
 	if has('nvim') && s:IsDiffHLIDCorrect() == 0
 		let [dc, dt] -= [1, 1]
 	endif
@@ -1385,91 +1512,6 @@ function! s:RestoreDiffHL()
 	endfor
 	call s:GotoWID(cwin)
 	unlet t:DChar.ovd
-endfunction
-endif
-
-" set highlight groups used for diffchar
-let s:DCharHL = {'A': 'DiffAdd', 'c': 'DiffChange', 't': 'DiffText',
-				\'C': 'dcDiffChange', 'T': 'dcDiffText', 'Z': 'dcDiffAddPos',
-								\'U': s:VF.GUIColors ? 'Cursor' : 'VertSplit'}
-let s:DCharHL = extend(s:DCharHL, s:VF.StrikeAttr ?
-			\{'d': 'DiffDelete', 'D': 'dcDiffDelStr'} : {'D': 'DiffDelete'})
-let s:DiffCTHL = {}
-
-function! s:DefineDiffCharHL()
-	" dcDiffAddPos = DiffChange + bold and underline
-	" dcDiffDelStr = DiffDelete + strikethrough
-	" dcDiffChange = DiffChange
-	" dcDiffText = DiffText
-	for [fh, th, at] in [['c', 'Z', ['bold', 'underline']],
-											\['c', 'C', []], ['t', 'T', []]] +
-					\(s:VF.StrikeAttr ? [['d', 'D', ['strikethrough']]] : [])
-		let hd = hlID(s:DCharHL[fh])
-		let ha = []
-		for hm in ['term', 'cterm', 'gui']
-			if hm != 'term'
-				let ha += map(['fg', 'bg', 'sp'],
-							\'hm . v:val . "=" . synIDattr(hd, v:val, hm)')
-			endif
-			let ha += [hm . '=' . join(filter(['bold', 'italic', 'reverse',
-							\'inverse', 'standout', 'underline', 'undercurl',
-					\'strikethrough'], 'synIDattr(hd, v:val, hm)') + at, ',')]
-		endfor
-		let hx = join(filter(ha, 'v:val !~ "=\\(-1\\)\\=$"'))
-		execute 'silent highlight clear ' . s:DCharHL[th]
-		execute 'silent highlight ' . s:DCharHL[th] . ' ' . hx
-		" set a dictionary for changing vim original DiffChange/DiffText
-		if th == 'C'				" 1: leave bg only
-			let s:DiffCTHL[fh] = {0: hx,
-									\1: join(filter(ha, 'v:val =~ "bg="'))}
-		elseif th == 'T'			" 1: leave noting
-			let s:DiffCTHL[fh] = {0: hx, 1: ''}
-		endif
-	endfor
-	if s:VF.DiffHLUnhidden
-		call s:ChangeDiffCTHL(exists('t:DChar.ovd'))
-	endif
-endfunction
-
-autocmd! diffchar ColorScheme * call s:DefineDiffCharHL()
-doautocmd diffchar ColorScheme
-
-if has('nvim')
-function! s:IsDiffHLIDCorrect()
-	" in nvim 2.1, id returned by diff_hlID() = correct id - 1.
-	" this function checks if diff_hlID() still has problem or not.
-	if exists('s:HLIDchecked') | return s:HLIDchecked | endif
-	let [da, dc, dt] =
-					\[hlID(s:DCharHL.A), hlID(s:DCharHL.c), hlID(s:DCharHL.t)]
-	let cwin = s:GetWID()
-	let ok = -1
-	let k = 1
-	while k <= 2 && ok < 0
-		call s:GotoWID(s:GetDiffCharWID()[k])
-		let l = 1
-		while l <= line('$') && ok < 0
-			let id = diff_hlID(l, 1)
-			if id == 0			" no HLID, then can not check
-			elseif id == dc || id == dt
-				let ok = 1		" C/T, then correct
-			elseif id == da
-				" A in part of columns, then incorrect
-				" A in all columns, then A/C uncertain
-				let ok = !empty(filter(range(1, col([l, '$'])),
-									\'diff_hlID(l, v:val) != id')) ? 0 : -2
-			else
-				let ok = 0		" other than A/C/T, then incorrect
-			endif
-			let l += 1
-		endwhile
-		let k += 1
-	endwhile
-	call s:GotoWID(cwin)
-	if ok == -2
-		let ok = 1				" still A/C uncertain means C, then correct
-	endif
-	if ok != -1 | let s:HLIDchecked = ok | endif
-	return ok
 endfunction
 endif
 
