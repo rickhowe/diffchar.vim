@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2017/11/25
-Version:     7.3
+Last Change: 2017/12/24
+Version:     7.4
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -71,7 +71,7 @@ difference unit, and [b or [e to the start or end position of the previous
 unit. Those keymaps, <F7> and <F8> are configurable in your vimrc and so on.
 
 This plugin always keeps the exact differences updated while editing if
-|g:DiffUpdate| is enabled and TextChanged/TextChangedI events are available.
+|g:DiffUpdate| is enabled and TextChanged/InsertLeave events are available.
 Like line-based diffget/diffput and do/dp vim commands, you can use
 <Leader>g and <Leader>p commands in normal mode to get and put each difference
 unit, where the cursor is on, between 2 buffers and undo its difference.
@@ -190,6 +190,15 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 7.4
+* Fixed to properly update DiffChar highlights while editing:
+  - when some lines were added or deleted, all the rest lines below became
+    deselected and unhighlighted.
+  - since it was not fast enough to update the highlights in insert mode,
+    changed to use InsertLeave event instead of TextChangedI.
+* Fixed not to unexpectedly select and highlight all of diff lines when
+  :diffupdate was executed, if some of those lines had been selected.
 
 Update : 7.3
 * Modified not to change the highlight option when drawing diffchar

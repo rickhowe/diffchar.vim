@@ -64,7 +64,7 @@ difference unit, and `[b` or `[e` to the start or end position of the previous
 unit. Those keymaps, `<F7>` and `<F8>` are configurable in your vimrc and so on.
 
 This plugin always keeps the exact differences updated while editing if a
-`g:DiffUpdate` is enabled and TextChanged/TextChangedI events are available.
+`g:DiffUpdate` is enabled and TextChanged/InsertLeave events are available.
 Like line-based `diffget`/`diffput` and `do`/`dp` vim commands, you can use
 `<Leader>g` and `<Leader>p` commands in normal mode to get and put each difference
 unit, where the cursor is on, between 2 buffers and undo its difference.
