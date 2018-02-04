@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2017/12/24
-Version:     7.4
+Last Change: 2018/02/04
+Version:     7.5
 Author:      Rick Howe <rdcxy754@ybb.ne.jp>
 
 -----------------------------------------------------------------------------
@@ -54,7 +54,8 @@ highlight. If a strike highlighting is available such as on GUI and some
 terminal, the deleted unit is highlighted with the strike instead and [+, +],
 [-, and -] are eliminated. This command tries to shorten some equivalent units
 and show ... instead, if the line is too long to fit on the command line.
-When [!] is used, nothing is shorten and all lines are displayed.
+The line number is shown if 'number' or 'relativenumber' option is set in the
+window. When [!] is used, nothing is shorten and all lines are displayed.
 
 This plugin traces the differences based on a |g:DiffUnit|. Its default is
 'Word1' and it handles a \w\+ word and a \W character as a difference unit.
@@ -115,7 +116,9 @@ COMMANDS                                               *diffchar-commands*
 :[range]EDChar[!]
     Echo the line for [range], by showing each corresponding unit together
     in `[+...+]`/`[-...-]` or strike highlighting. Some equivalent units may be
-    shown as `...`. When [!] is used, all lines and all units are displayed.
+    shown as `...`. The line number is shown if 'number' or 'relativenumber'
+    option is set in the window. When [!] is used, all lines and all units
+    are displayed.
 
 -----------------------------------------------------------------------------
 KEYMAPS                                                *diffchar-keymaps*
@@ -190,6 +193,12 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 7.5
+* Enhanced to update DiffChar highlights much faster when adding or deleting
+  some lines.
+* Improved :EDChar command to show the line number if 'number' or
+  'relativenumber' option is set in the window.
 
 Update : 7.4
 * Fixed to properly update DiffChar highlights while editing:

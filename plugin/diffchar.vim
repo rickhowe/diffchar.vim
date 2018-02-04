@@ -8,14 +8,14 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2017/12/24
-" Version:		7.4
+" Last Change:	2018/02/04
+" Version:		7.5
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 
 if exists('g:loaded_diffchar') || !has('diff')
 	finish
 endif
-let g:loaded_diffchar = 7.4
+let g:loaded_diffchar = 7.5
 
 let s:save_cpo = &cpoptions
 set cpo&vim

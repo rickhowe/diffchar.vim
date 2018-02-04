@@ -47,7 +47,8 @@ highlight. If a strike highlighting is available such as on GUI and some
 terminal, the deleted unit is highlighted with the strike instead and `[+`, `+]`,
 `[-`, and `-]` are eliminated. This command tries to shorten some equivalent units
 and show `...` instead, if the line is too long to fit on the command line.
-When [!] is used, nothing is shorten and all lines are displayed.
+The line number is shown if `number` or `relativenumber` option is set in the
+window. When [!] is used, nothing is shorten and all lines are displayed.
 
 This plugin traces the differences based on a `g:DiffUnit`. Its default is
 'Word1' and it handles a \w\\+ word and a \W character as a difference unit.
@@ -104,7 +105,9 @@ This plugin has been always positively supporting mulltibyte characters.
 * `:[range]EDChar[!]`
   * Echo the line for [range], by showing each corresponding unit together
     in `[+...+]`/`[-...-]` or strike highlighting. Some equivalent units may be
-    shown as `...`. When [!] is used, all lines and all units are displayed.
+    shown as `...`. The line number is shown if `number` or `relativenumber`
+    option is set in the window. When [!] is used, all lines and all units
+    are displayed.
 
 #### Keymaps
 
@@ -172,6 +175,7 @@ This plugin has been always positively supporting mulltibyte characters.
 :let t:DiffColors = 3
 :windo diffthis | windo set wrap
 :EDChar          " echo line 3 together with corresponding difference unit
+:%EDChar!        " echo all lines along with the line number
 
 <space>          " move cursor forward on line 1 and
 <space>          " make its corresponding unit pair visible
