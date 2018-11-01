@@ -144,7 +144,7 @@ This plugin has been always positively supporting mulltibyte characters.
 * `g:DiffModeSync`, `t:DiffModeSync`- Synchronously show/reset/update with diff mode
   * 1 : enable (default)
   * 0 : disable
-* `g:DiffMaxLines', 't:DiffMaxLines' - A maximum number of DiffChange lines to be dynamically detected
+* `g:DiffMaxLines`, `t:DiffMaxLines` - A maximum number of DiffChange lines to be dynamically detected
   * 1 ~ : (300 as default, 100 if diff commend not available)
   * 0 : disable (detect all DiffChange lines only when a diff mode begins)
 * `g:DiffPairVisible`, `t:DiffPairVisible` - Make a corresponding unit visible when cursor is moved on a difference unit
