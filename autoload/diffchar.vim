@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2018/11/1
-" Version:		8.0
+" Last Change:	2018/11/18
+" Version:		8.1
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2018 by Rick Howe
 
@@ -607,20 +607,24 @@ function! s:SetDiffModeLines()
 	endif
 	let [ck, nk] = (t:DChar.wid[1] == cwin) ? [1, 2] : [2, 1]
 	let nwin = t:DChar.wid[nk]
-	let cs = (&diffopt =~ 'context:') ?
-		\eval(substitute(&diffopt, '^.*context:\(\d\+\).*$', '\1', '')) : 6
+	let cs = 1 + ((&diffopt =~ 'context:') ?
+		\eval(substitute(&diffopt, '^.*context:\(\d\+\).*$', '\1', '')) : 6)
 	" first in cwin, find dml from current visible and above/below lines
-	let wt = foldclosedend(line('w0'))
-	let wt = (wt == -1) ? line('w0') : wt + cs
-	let wb = foldclosed(line('w$'))
-	let wb = (wb == -1) ? line('w$') : wb - cs
-	if wt > wb
-		return exists('t:DChar.dml') ? t:DChar.dml : dml
-	endif
-	let dml[ck] = filter(range(wt, wb),
+	let [la, lb] = [line('w0'), line('w$')]
+	let [wa, wb] = [foldclosedend(la), foldclosed(lb)]
+	let [fa, fb] = [wa != -1, wb != -1]
+	let wa = fa ? wa + cs : la
+	let wb = fb ? wb - cs : lb
+	if wa <= wb
+		let dml[ck] = filter(range(wa, wb),
 									\'index(ct, diff_hlID(v:val, 1)) != -1')
+	else
+		let dml[ck] = []
+		if fa | let wa = foldclosed(la) - cs + 1 | endif
+		if fb | let wb = foldclosedend(lb) + cs - 1 | endif
+	endif
 	let rc = max([t:DChar.mxl, winheight(0)]) - len(dml[ck])
-	let [al, bl] = [wt - 1, wb + 1]
+	let [al, bl] = [wa - 1, wb + 1]
 	while 0 < rc && (1 <= al || bl <= line('$'))
 		let hc = (rc + 1) / 2
 		let [ar, br] = [al, line('$') - bl + 1]
@@ -655,11 +659,11 @@ function! s:SetDiffModeLines()
 	let ok = 0
 	if exists('t:DChar.dml')
 		" try to make use of old dml
-		let [nt, nb] = [dml[ck][0], dml[ck][-1]]
-		let [ot, ob] = [t:DChar.dml[ck][0], t:DChar.dml[ck][-1]]
-		if nt <= ob && nb >= ot
+		let [na, nb] = [dml[ck][0], dml[ck][-1]]
+		let [oa, ob] = [t:DChar.dml[ck][0], t:DChar.dml[ck][-1]]
+		if na <= ob && nb >= oa
 			" find where the new dml exist in old dml
-			let cl = index(t:DChar.dml[ck], nt)
+			let cl = index(t:DChar.dml[ck], na)
 			if cl != -1
 				let [al, ac] = [0, 0]
 				let [bl, bc] = [t:DChar.dml[nk][cl], len(dml[ck])]
@@ -670,7 +674,7 @@ function! s:SetDiffModeLines()
 					let [bl, bc] = [0, 0]
 				else
 					let [al, ac] =
-								\[t:DChar.dml[nk][0] - 1, index(dml[ck], ot)]
+								\[t:DChar.dml[nk][0] - 1, index(dml[ck], oa)]
 					let [bl, bc] = [al + 1, len(dml[ck]) - ac]
 				endif
 			endif
@@ -749,12 +753,11 @@ function! s:AdjustDiffCharLines(key)
 	if !exists('t:DChar') || t:DChar.wid[a:key] != win_getid()
 		return
 	endif
-	let vc = [line('w0'), line('w$'), s:Changenr()]
-	let na = t:DChar.mxw[a:key][: 1] == vc[: 1] ||
-											\t:DChar.mxw[a:key][2] != vc[2]
-	let t:DChar.mxw[a:key] = vc
-	if na | return | endif
-	if vc[0] < t:DChar.dml[a:key][0] || t:DChar.dml[a:key][-1] < vc[1]
+	let wc = [line('w0'), line('w$'), s:Changenr()]
+	let cm = t:DChar.mxw[a:key][: 1] != wc[: 1] &&
+											\t:DChar.mxw[a:key][2] == wc[2]
+	let t:DChar.mxw[a:key] = wc
+	if cm && (wc[0] < t:DChar.dml[a:key][0] || t:DChar.dml[a:key][-1] < wc[1])
 		let dml = s:SetDiffModeLines()
 		if t:DChar.dml == dml | return | endif
 		" delete old diff mode lines and Diff HL except new ones

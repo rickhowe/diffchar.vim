@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change:	2018/11/1
-Version:	8.0
+Last Change:	2018/11/18
+Version:	8.1
 Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 Copyright:	(c) 2014-2018 by Rick Howe
 
@@ -186,6 +186,10 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 8.1
+* Fixed to properly detect DiffChange lines even when all visible lines of
+  current window are in a closed fold if a |g:DiffMaxLines| option is enabled.
 
 Update : 8.0
 * Introduced a |g:DiffMaxLines| option to dynamically detect a limited number
