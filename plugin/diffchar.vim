@@ -8,15 +8,15 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2018/11/18
-" Version:		8.1
+" Last Change:	2019/01/05
+" Version:		8.2
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
-" Copyright:	(c) 2014-2018 by Rick Howe
+" Copyright:	(c) 2014-2019 by Rick Howe
 
 if exists('g:loaded_diffchar') || !has('diff') || v:version < 800
 	finish
 endif
-let g:loaded_diffchar = 8.1
+let g:loaded_diffchar = 8.2
 
 let s:save_cpo = &cpoptions
 set cpo&vim

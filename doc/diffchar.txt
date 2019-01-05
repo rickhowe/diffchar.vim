@@ -8,10 +8,10 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change:	2018/11/18
-Version:	8.1
+Last Change:	2019/01/05
+Version:	8.2
 Author:		Rick Howe <rdcxy754@ybb.ne.jp>
-Copyright:	(c) 2014-2018 by Rick Howe
+Copyright:	(c) 2014-2019 by Rick Howe
 
 -----------------------------------------------------------------------------
 INTRODUCTION                                           *diffchar*
@@ -186,6 +186,10 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 8.2
+* Fixed to correctly update the highlighted DiffChar units while editing when
+  a new internal diff is not specified in 'diffopt' option (patch-8.1.360).
 
 Update : 8.1
 * Fixed to properly detect DiffChange lines even when all visible lines of

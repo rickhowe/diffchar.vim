@@ -8,10 +8,10 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2018/11/18
-" Version:		8.1
+" Last Change:	2019/01/05
+" Version:		8.2
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
-" Copyright:	(c) 2014-2018 by Rick Howe
+" Copyright:	(c) 2014-2019 by Rick Howe
 
 let s:save_cpo = &cpoptions
 set cpo&vim
@@ -592,25 +592,21 @@ function! s:SetDiffModeLines()
 	let dml = {'1': [], '2': []}
 	let cwin = win_getid()
 	" if mxl disable or less lines than mxl, select all lines
-	if t:DChar.mxl == 0 || line('$') <= t:DChar.mxl
+	if t:DChar.mxl <= 0 || line('$') <= t:DChar.mxl
 		for k in [1, 2]
 			noautocmd call win_gotoid(t:DChar.wid[k])
 			let dml[k] = filter(range(1, line('$')),
 									\'index(ct, diff_hlID(v:val, 1)) != -1')
 		endfor
 		noautocmd call win_gotoid(cwin)
-		if 0 < t:DChar.mxl
-			let t:DChar.mxl = 0
-			unlet t:DChar.mxw
-		endif
 		return dml
 	endif
-	let [ck, nk] = (t:DChar.wid[1] == cwin) ? [1, 2] : [2, 1]
-	let nwin = t:DChar.wid[nk]
 	let cs = 1 + ((&diffopt =~ 'context:') ?
 		\eval(substitute(&diffopt, '^.*context:\(\d\+\).*$', '\1', '')) : 6)
+	let [ck, nk] = (t:DChar.wid[1] == cwin) ? [1, 2] : [2, 1]
+	let nwin = t:DChar.wid[nk]
 	" first in cwin, find dml from current visible and above/below lines
-	let [la, lb] = [line('w0'), line('w$')]
+	let [la, lb] = [t:DChar.mxw[ck][0], t:DChar.mxw[ck][1]]
 	let [wa, wb] = [foldclosedend(la), foldclosed(lb)]
 	let [fa, fb] = [wa != -1, wb != -1]
 	let wa = fa ? wa + cs : la
@@ -619,11 +615,10 @@ function! s:SetDiffModeLines()
 		let dml[ck] = filter(range(wa, wb),
 									\'index(ct, diff_hlID(v:val, 1)) != -1')
 	else
-		let dml[ck] = []
 		if fa | let wa = foldclosed(la) - cs + 1 | endif
 		if fb | let wb = foldclosedend(lb) + cs - 1 | endif
 	endif
-	let rc = max([t:DChar.mxl, winheight(0)]) - len(dml[ck])
+	let rc = max([t:DChar.mxl, lb - la + 1]) - len(dml[ck])
 	let [al, bl] = [wa - 1, wb + 1]
 	while 0 < rc && (1 <= al || bl <= line('$'))
 		let hc = (rc + 1) / 2
@@ -715,7 +710,6 @@ function! s:SetDiffModeLines()
 	endif
 	" then find dml in nwin
 	noautocmd call win_gotoid(nwin)
-	let dml[nk] = []
 	while 0 < ac && 1 <= al
 		let fl = foldclosed(al)
 		if fl != -1 | let al = fl - cs | endif
@@ -843,15 +837,18 @@ function! s:UpdateDiffChar(key, event)
 			\!empty(filter(values(t:DChar.wid), '!getwinvar(v:val, "&diff")'))
 		return
 	endif
-	if s:VF.DiffUpdated && a:event != 2
-		let t:DChar.pdu = 1			" actual DiffUpdated comes next
+	if s:VF.DiffUpdated && &diffopt =~ 'internal' && empty(&diffexpr) &&
+																\a:event != 2
+		" if an internal diff is used, check DiffUpdated only
+		" otherwise, also need to check TextChanged/InsertLeave
+		" because DiffUpdated not triggered on text change
 		return
 	endif
 	let cwin = win_getid()
 	noautocmd call win_gotoid(t:DChar.wid[a:key])
 	let [pcn, pln] = t:DChar.pcn[a:key]
 	let [ccn, cln] = [s:Changenr(), line('$')]
-	if pcn == ccn && a:event == 2
+	if pcn == ccn
 		" in case of text notchanged (diffupdate and diffopt changes)
 		let [t:DChar.hlc[1][0], t:DChar.hlc[2][0]] = [[], []]
 		call diffchar#ResetDiffChar()
@@ -870,8 +867,7 @@ function! s:UpdateDiffChar(key, event)
 			call s:ToggleDiffHL(0)
 			unlet t:DChar
 		endif
-	elseif pcn != ccn && (a:event != 2 || exists('t:DChar.pdu'))
-		if exists('t:DChar.pdu') | unlet t:DChar.pdu | endif
+	else
 		let t:DChar.pcn[a:key] = [ccn, cln]
 		" compare between previous and current DChar and diff mode lines
 		" using checksum and find ones to be deleted, added, and shifted
@@ -1411,7 +1407,7 @@ function! s:SwitchDiffChar(...)
 		endif
 	endif
 	if !exists('t:DChar') && get(t:, 'DiffModeSync', g:DiffModeSync)
-		let dwin += filter(map(
+		let dwin = filter(map(
 						\range(winnr(), winnr('$')) + range(1, winnr() - 1),
 							\'win_getid(v:val)'), 'getwinvar(v:val, "&diff")')
 		let dbuf = map(copy(dwin), 'winbufnr(v:val)')
