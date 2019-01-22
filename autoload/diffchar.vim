@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2019/01/05
-" Version:		8.2
+" Last Change:	2019/01/22
+" Version:		8.3
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2019 by Rick Howe
 
@@ -618,7 +618,8 @@ function! s:SetDiffModeLines()
 		if fa | let wa = foldclosed(la) - cs + 1 | endif
 		if fb | let wb = foldclosedend(lb) + cs - 1 | endif
 	endif
-	let rc = max([t:DChar.mxl, lb - la + 1]) - len(dml[ck])
+	let rc = max([t:DChar.mxl, winheight(cwin), winheight(nwin)]) -
+																\len(dml[ck])
 	let [al, bl] = [wa - 1, wb + 1]
 	while 0 < rc && (1 <= al || bl <= line('$'))
 		let hc = (rc + 1) / 2
