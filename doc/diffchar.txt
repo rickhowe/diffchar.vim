@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change:	2019/03/01
-Version:	8.4
+Last Change:	2019/03/22
+Version:	8.5
 Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 Copyright:	(c) 2014-2019 by Rick Howe
 
@@ -163,10 +163,10 @@ OPTIONS                                                *diffchar-options*
     100 : all colors defined in highlight option in dynamic random order
 
 |g:DiffPairVisible|, |t:DiffPairVisible|
-    Make a corresponding unit visible when cursor is moved onto an unit
+    Make a corresponding unit visible when cursor is moved onto a diff unit
     2 : highlight with cursor-like color plus echo as a message (default)
     1 : highlight with cursor-like color
-    0 : nothing visible
+    0 : disable
 
 |g:DiffModeSync|, |t:DiffModeSync|
     Synchronously show/reset/update with diff mode
@@ -181,6 +181,12 @@ OPTIONS                                                *diffchar-options*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 8.5
+* Enhanced to show a balloon on GUI and display a corresponding diff unit,
+  where the mouse is pointing, if |g:DiffPairVisible| option is enabled
+  (patch-8.1.647 is required to correctly display multibyte characters).
+* Fixed to correctly handle DiffChange lines while editing.
 
 Update : 8.4
 * Extended |g:DiffMaxLines| option to allow a negative value as multiples of

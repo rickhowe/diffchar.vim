@@ -8,15 +8,15 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2019/03/01
-" Version:		8.4
+" Last Change:	2019/03/22
+" Version:		8.5
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2019 by Rick Howe
 
 if exists('g:loaded_diffchar') || !has('diff') || v:version < 800
 	finish
 endif
-let g:loaded_diffchar = 8.4
+let g:loaded_diffchar = 8.5
 
 let s:save_cpo = &cpoptions
 set cpo&vim
@@ -73,7 +73,7 @@ endif
 if !exists('g:DiffPairVisible')
 	let g:DiffPairVisible = 2	" cursor-like highlight + echo
 	" let g:DiffPairVisible = 1	" cursor-like highlight
-	" let g:DiffPairVisible = 0	" nothing visible
+	" let g:DiffPairVisible = 0	" disable
 endif
 
 " Set a diff mode synchronization to show/reset/update exact differences

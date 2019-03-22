@@ -20,7 +20,7 @@ character by character - so called *DiffChar*.
 For example, in diff mode:  
 ![example1](example1.png)
 
-this plugin will exactly show the changed and added units:  
+This plugin will exactly show the changed and added units:  
 ![example2](example2.png)
 
 This plugin will synchronously show/reset the highlights of the exact
@@ -142,7 +142,7 @@ This plugin has been always positively supporting mulltibyte characters.
 * `g:DiffPairVisible`, `t:DiffPairVisible` - Make a corresponding unit visible when cursor is moved on a difference unit
   * 2 : highlight with cursor-like color plus echo as a message (default)
   * 1 : highlight with cursor-like color
-  * 0 : nothing visible
+  * 0 : disable
 * `g:DiffModeSync`, `t:DiffModeSync`- Synchronously show/reset/update with diff mode
   * 1 : enable (default)
   * 0 : disable
@@ -170,8 +170,10 @@ This plugin has been always positively supporting mulltibyte characters.
 :EDChar          " echo line 3 together with corresponding difference unit
 :%EDChar!        " echo all lines along with the line number
 
-<space>          " move cursor forward on line 1 and
+<space>          " move a cursor forward on line 1 and
 <space>          " make its corresponding unit pair visible
+...
+...              " move a mouse cursor over on line 3 and show a balloon
 ...
 ]b\g             " jump to the next difference unit on line 3 and
 ]b\g             " get each unit pair from another buffer to undo difference
