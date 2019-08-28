@@ -8,15 +8,15 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2019/03/22
-" Version:		8.5
+" Last Change:	2019/08/28
+" Version:		8.6
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2019 by Rick Howe
 
 if exists('g:loaded_diffchar') || !has('diff') || v:version < 800
 	finish
 endif
-let g:loaded_diffchar = 8.5
+let g:loaded_diffchar = 8.6
 
 let s:save_cpo = &cpoptions
 set cpo&vim
@@ -71,8 +71,9 @@ endif
 
 " Make a corresponding unit visible when cursor is moved on a diff unit
 if !exists('g:DiffPairVisible')
-	let g:DiffPairVisible = 2	" cursor-like highlight + echo
-	" let g:DiffPairVisible = 1	" cursor-like highlight
+	let g:DiffPairVisible = 1	" highlight with hl-Cursor
+	" let g:DiffPairVisible = 2	" highlight with hl-Cursor + echo
+	" let g:DiffPairVisible = 3	" highlight with hl-Cursor + popup-window
 	" let g:DiffPairVisible = 0	" disable
 endif
 
@@ -82,7 +83,7 @@ if !exists('g:DiffModeSync')
 	" let g:DiffModeSync = 0	" disable
 endif
 
-" Set a number of maximum DiffChange lines to be dynamically detected
+" Set a number of maximum hl-DiffChange lines to be dynamically detected
 if !exists('g:DiffMaxLines')
 	let g:DiffMaxLines = -3		" 3 times as many lines as higher window
 	" let g:DiffMaxLines = 50	" 50 lines including visible ones

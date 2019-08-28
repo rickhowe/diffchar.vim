@@ -26,7 +26,7 @@ This plugin will exactly show the changed and added units:
 This plugin will synchronously show/reset the highlights of the exact
 differences as soon as the diff mode begins/ends since a `g:DiffModeSync` is
 enabled as a default. And the exact differences will be kept updated while
-editing.  
+editing.
 
 You can use `:SDChar` and `:RDChar` commands to manually show and reset the
 highlights on all or some of lines. To toggle the highlights, use `:TDChar` 
@@ -40,27 +40,30 @@ character by character.
 In diff mode, the corresponding changed lines are compared between two
 windows. You can set a matching color to a `g:DiffColors` to make it easy to
 find the corresponding units between two windows. As a default, all the
-changed units are highlighted with DiffText. In addition, DiffAdd is always
-used for the added units and both the previous and next character of the
-deleted units are shown in bold/underline.
+changed units are highlighted with `hl-DiffText`. In addition, `hl-DiffAdd` is
+always used for the added units and both the previous and next character of
+the deleted units are shown in bold/underline.
 
 When the diff mode begins, this plugin detects the limited number of the
-DiffChange lines, specified by a `g:DiffMaxLines`, in the current visible and
-upper/lower lines of the window. Whenever a cursor is moved onto another line
-and then the window is scrolled up or down, it dynamically detects the
-DiffChange lines again. Which means, independently of the file size, the
+`hl-DiffChange` lines, specified by a `g:DiffMaxLines`, in the current visible
+and upper/lower lines of the window. Whenever a cursor is moved onto another
+line and then the window is scrolled up or down, it dynamically detects the
+`hl-DiffChange` lines again. Which means, independently of the file size, the
 number of lines to be detected and then the time consumed are always constant.
-You can specify a positive value as the actual number of DiffChange lines.
-The height of the current window is used instead if its value is less than it.
-A negative value is also allowed as multiples of the window height. If 0 is
-specified, it disables and statically detects all DiffChange lines once the
-diff mode begins. Its default is -3 and detects three times as many lines as
-the window height.
+You can specify a positive value as the actual number of `hl-DiffChange`
+lines. The height of the current window is used instead if its value is less
+than it. A negative value is also allowed as multiples of the window height.
+If 0 is specified, it disables and statically detects all `hl-DiffChange`
+lines once the diff mode begins. Its default is -3 and detects three times as
+many lines as the window height.
 
-While showing the exact differences, when cursor is moved on a difference
-unit, you can see its corresponding unit with cursor-like highlight in another
-window, and also its whole string with the assigned color as a message,
-based on `g:DiffPairVisible`.
+While showing the exact differences, when the cursor is moved on a difference
+unit, you can see its corresponding unit with `hl-Cursor` in another window,
+based on `g:DiffPairVisible`. In addition, the corresponding unit is echoed in
+the command line or displayed in a popup-window just below the cursor
+position, if you change its default. And if `g:DiffPairVisible` is enabled, a
+balloon window is appeared to display the corresponding unit where the mouse
+is pointing.
 
 You can use `]b` or `]e` to jump cursor to start or end position of the next
 difference unit, and `[b` or `[e` to the start or end position of the previous
@@ -133,51 +136,46 @@ This plugin has been always positively supporting mulltibyte characters.
   * 'Word3'  : \\< or \\> character class boundaries
   * 'Char'   : any single character
   * 'CSV(,)' : separated by characters such as ',', ';', and '\t'
-* `g:DiffColors`, `t:DiffColors` - Matching colors for changed unit pairs (always DiffAdd for added units)
-  * 0   : always DiffText (default)
+* `g:DiffColors`, `t:DiffColors` - Matching colors for changed units (always `hl-DiffAdd` for added units)
+  * 0   : always `hl-DiffText` (default)
   * 1   : 4 colors in fixed order
   * 2   : 8 colors in fixed order
   * 3   : 16 colors in fixed order
   * 100 : all colors defined in highlight option in dynamic random order
-* `g:DiffPairVisible`, `t:DiffPairVisible` - Make a corresponding unit visible when cursor is moved on a difference unit
-  * 2 : highlight with cursor-like color plus echo as a message (default)
-  * 1 : highlight with cursor-like color
+* `g:DiffPairVisible`, `t:DiffPairVisible` - Make a corresponding unit visible when cursor is onto a difference unit
   * 0 : disable
+  * 1 : highlight with `hl-Cursor` (default)
+  * 2 : highlight with `hl-Cursor` + echo in the command line
+  * 3 : highlight with `hl-Cursor` + popup-window at the cursor position
 * `g:DiffModeSync`, `t:DiffModeSync`- Synchronously show/reset/update with diff mode
-  * 1 : enable (default)
   * 0 : disable
-* `g:DiffMaxLines`, `t:DiffMaxLines` - A maximum number of DiffChange lines to be dynamically detected
+  * 1 : enable (default)
+* `g:DiffMaxLines`, `t:DiffMaxLines` - A maximum number of `hl-DiffChange` lines to be dynamically detected
   * -n : multiples of the window height (default as -3)
   * n  : the actual number of lines
-  * 0  : disable (detect all DiffChange lines once diff mode begins)
+  * 0  : disable (detect all `hl-DiffChange` lines once diff mode begins)
 
 #### Demo
 
 ![demo](demo.gif)
 ```viml
-:let t:DiffModeSync = 0
 :windo diffthis | windo set wrap
-:%SDChar
-:%RDChar
-:diffoff!
-
-:let t:DiffModeSync = 1        " this is a default value
-:windo diffthis | windo set wrap
-:diffoff!
-
-:let t:DiffColors = 3
-:windo diffthis | windo set wrap
-:EDChar          " echo line 3 together with corresponding difference unit
-:%EDChar!        " echo all lines along with the line number
-
-<space>          " move a cursor forward on line 1 and
-<space>          " make its corresponding unit pair visible
-...
+<space>...       " move a cursor forward on line 1 and
+\g               " get each unit pair from another buffer, then
+u                " undo to resume original line 1
 ...              " move a mouse cursor over on line 3 and show a balloon
-...
-]b\g             " jump to the next difference unit on line 3 and
-]b\g             " get each unit pair from another buffer to undo difference
-...
+:diffoff!
 
+:let t:DiffColors = 2
+:windo diffthis | windo set wrap
+:EDChar          " echo line 1 together with corresponding diff unit
+:%EDChar!        " echo all lines along with the line number
+:diffoff!
+
+:let t:DiffPairVisible = 3
+:windo diffthis | windo set wrap
+]b               " jump to the start of the next unit and
+[e               " the end of the previous unit on line 1, then
+                 " show the corresponding diff unit in popup-window
 :diffoff!
 ```
