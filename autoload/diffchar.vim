@@ -75,7 +75,7 @@ function! s:SetDiffCharHL() abort
 	endif
 	" set DiffChar specific highlights
 	let s:DCharHL = {'A': 'DiffAdd', 'D': 'DiffDelete', 'n': 'LineNr',
-							\'c': (s:VF.GUIColors ? 'Cursor' : 'VertSplit')}
+							\'c': 'Cursor'}
 	for [fh, tn, th, ta] in [['DiffChange', 'C', 'dcDiffChange', ''],
 										\['DiffText', 'T', 'dcDiffText', ''],
 					\['DiffChange', 'E', 'dcDiffErase', 'bold,underline']] +
