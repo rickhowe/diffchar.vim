@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2021/02/12
-" Version:		8.8
+" Last Change:	2021/04/16
+" Version:		8.9
 " Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2021 by Rick Howe
 
@@ -23,6 +23,7 @@ set cpo&vim
 " patch-8.0.1038: strikethrough attribute available
 " patch-8.0.1160: gettabvar() fixed not to return empty
 " patch-8.0.1290: changenr() fixed to return correct value
+" patch-8.1.414:  v:option fixed in OptionSet diff autocmd
 " patch-8.1.1084: window ID argument available in all match functions
 " patch-8.1.1832: win_execute() fixed to work in other tabpage
 let s:VF = {
@@ -37,12 +38,12 @@ let s:VF = {
 	\'WinExecute': exists('*win_execute'),
 	\'DiffOptionSet': has('patch-8.0.736'),
 	\'CountString': has('patch-8.0.794'),
-	\'NocombineAttr': has('patch-8.0.914'),
 	\'StrikeAttr': has('patch-8.0.1038') &&
 					\(has('gui_running') || !empty(&t_Ts) && !empty(&t_Te)),
 	\'GettabvarFixed': has('patch-8.0.1160'),
 	\'ChangenrFixed': has('patch-8.0.1290'),
-	\'WinIDinMatch': has('patch-8.1.1084'),
+	\'VOptionFixed': has('patch-8.1.414') || has('nvim-0.3.2'),
+	\'WinIDinMatch': has('patch-8.1.1084') || has('nvim-0.5.0'),
 	\'WinExecFixed': has('patch-8.1.1832'),
 	\'NvimDiffHLID': has('nvim') && !has('nvim-0.4.0')}
 
@@ -63,12 +64,12 @@ function! s:SetDiffCharHL() abort
 			for hc in ['fg', 'bg', 'sp']
 				let dh.0[hm . hc] = synIDattr(dh.it, hc, hm)
 			endfor
-			let dh.0[hm] = join(filter(['bold', 'italic', 'reverse',
-				\'inverse', 'standout', 'underline', 'undercurl', 'strike'],
+			let dh.0[hm] = join(filter(['bold', 'underline', 'undercurl',
+				\'strikethrough', 'reverse', 'inverse', 'italic', 'standout'],
 								\'!empty(synIDattr(dh.it, v:val, hm))'), ',')
 		endfor
 		call filter(dh.0, '!empty(v:val)')
-		let dh.1 = (!s:VF.NocombineAttr && (hs == 'C' || hs == 'T')) ?
+		let dh.1 = (hs == 'C' || hs == 'T') ?
 				\filter(copy(dh.0), 'v:key =~ "\\(fg\\|bg\\|sp\\)$"') : dh.0
 		let dh.2 = (hs == 'C') ? filter(copy(dh.1), 'v:key =~ "bg$"') :
 													\(hs == 'T') ? {} : dh.1
@@ -88,8 +89,8 @@ function! s:SetDiffCharHL() abort
 				let nm = synIDattr(id, 'name')
 				if empty(nm) | break | endif
 				if id == synIDtrans(id) && !empty(synIDattr(id, 'reverse')) &&
-					\empty(filter(['fg', 'bg', 'sp', 'bold', 'italic',
-							\'standout', 'underline', 'undercurl', 'strike'],
+					\empty(filter(['fg', 'bg', 'sp', 'bold', 'underline',
+						\'undercurl', 'strikethrough', 'italic', 'standout'],
 											\'!empty(synIDattr(id, v:val))'))
 					let s:DCharHL.c = nm
 					break
@@ -101,26 +102,13 @@ function! s:SetDiffCharHL() abort
 	for [fs, ts, th, ta] in [['C', 'C', 'dcDiffChange', ''],
 							\['T', 'T', 'dcDiffText', ''],
 							\['C', 'E', 'dcDiffErase', 'bold,underline']] +
-				\(s:VF.NocombineAttr ? [['A', 'A', 'dcDiffAdd', '']] : []) +
 		\(s:VF.StrikeAttr ? [['D', 'D', 'dcDiffDelete', 'strikethrough']] : [])
 		let fa = copy(s:DiffHL[fs].0)
-		if s:VF.NocombineAttr
-			let ta .= (empty(ta) ? '' : ',') . 'nocombine'
-		endif
 		if !empty(ta)
 			for hm in ['term', 'cterm', 'gui']
 				let fa[hm] = has_key(fa, hm) ? fa[hm] . ',' . ta : ta
 			endfor
 		endif
-		for hm in ['cterm', 'gui']
-			" add missing fg/bg (if known) not to transparent but overwrite
-			for hc in ['fg', 'bg']
-				if !has_key(fa, hm . hc) && (hm == 'gui' ||
-								\!empty(synIDattr(hlID('Normal'), hc, hm)))
-					let fa[hm . hc] = hc
-				endif
-			endfor
-		endfor
 		call execute(['highlight clear ' . th,
 							\'highlight ' . th . ' ' .
 								\join(map(items(fa), 'join(v:val, "=")'))])
@@ -221,64 +209,45 @@ function! s:InitializeDiffChar() abort
 	let t:DChar.hgp = [s:DCharHL.T]
 	let dc = get(t:, 'DiffColors', g:DiffColors)
 	if 1 <= dc && dc <= 4
-		" select among all available hl with bg (except used in the script),
-		" in the priority: bold + fg > bold > fg
-		for [nn, fb] in [['nf', 'fg#'], ['nb', 'bg#']]
-			let {nn} = synIDattr(hlID('Normal'), fb)
-			let {nn} = !empty({nn}) ? [{nn}] :
-						\s:VF.GUIColors ? ['#000000', '#ffffff'] : ['0', '15']
-		endfor
-		let xb = map(values(s:DCharHL), 'synIDattr(hlID(v:val), "bg#")') + nb
-		let tb = synIDattr(hlID(s:DCharHL.T), 'bg#')
-		let hl = {}
-		let lv = {}
+		" select all available hl which has bg and has not attribute
+		let [fd, bd] = map(['fg#', 'bg#'], 'synIDattr(hlID("Normal"), v:val)')
 		let id = 1
-		while 1
+		while empty(fd) || empty(bd)
 			let nm = synIDattr(id, 'name')
 			if empty(nm) | break | endif
-			if id == synIDtrans(id) && empty(filter(['italic', 'underline',
-					\'undercurl', 'strike'], '!empty(synIDattr(id, v:val))'))
-				let [fg, bg, ld, rv, in, so] = map(['fg#', 'bg#', 'bold',
-										\'reverse', 'inverse', 'standout'],
-													\'synIDattr(id, v:val)')
-				if !empty(rv. in . so) | let [fg, bg] = [bg, fg] | endif
-				if fg != bg && !empty(bg) && index(xb, bg) == -1
-					if !has_key(hl, bg)
-						let hl[bg] = {}
-						if s:VF.GUIColors
-							let tv = map(split(tb[1:] . bg[1:], '..\zs'),
-															\'"0x" . v:val')
-							let dv = 10 * (abs(tv[0] - tv[3]) +
-									\abs(tv[1] - tv[4]) + abs(tv[2] - tv[5]))
-						else
-							let dv = 10 * abs(tb - bg)
-						endif
-						while has_key(lv, dv) | let dv += 1 | endwhile
-						let lv[dv] = bg
-					endif
-					let pr = 2 * !empty(ld . so) + !empty(fg)
-					if !has_key(hl[bg], pr) | let hl[bg][pr] = {} | endif
-					let hl[bg][pr][fg] = nm
+			if id == synIDtrans(id)
+				if empty(fd) && synIDattr(id, 'bg') == 'fg'
+					let fd = synIDattr(id, 'bg#')
+				endif
+				if empty(bd) && synIDattr(id, 'fg') == 'bg'
+					let bd = synIDattr(id, 'fg#')
 				endif
 			endif
 			let id += 1
 		endwhile
-		let ix = 0
-		while !empty(lv)
-			let dv = function(ix ? 'min' : 'max')(keys(lv))
-			let bg = lv[dv]
-			let pr = filter([3, 2, 1, 0], 'has_key(hl[bg], v:val)')[0]
-			let nm = values(hl[bg][pr])[0]
-			if 1 < len(hl[bg][pr])
-				let nx = filter(hl[bg][pr], 'index(nf, v:key) == -1')
-				if !empty(nx) | let nm = values(nx)[0] | endif
+		let xb = map(values(s:DCharHL), 'synIDattr(hlID(v:val), "bg#")')
+		let hl = {}
+		let id = 1
+		while 1
+			let nm = synIDattr(id, 'name')
+			if empty(nm) | break | endif
+			if id == synIDtrans(id)
+				let [fg, bg, rv] = map(['fg#', 'bg#', 'reverse'],
+													\'synIDattr(id, v:val)')
+				if empty(fg) | let fg = fd | endif
+				if !empty(rv) | let bg = !empty(fg) ? fg : fd | endif
+				if !empty(bg) && bg != fg && bg != bd &&
+					\index(xb, bg) == -1 && empty(filter(map(['bold',
+						\'underline', 'undercurl', 'strikethrough', 'italic',
+																\'standout'],
+								\'synIDattr(id, v:val)'), '!empty(v:val)'))
+					let hl[bg] = nm
+				endif
 			endif
-			let t:DChar.hgp += [nm]
-			unlet lv[dv]
-			let ix = !ix
+			let id += 1
 		endwhile
-		let t:DChar.hgp = t:DChar.hgp[: ((dc == 1) ? 3 : (dc == 2) ? 7 :
-														\(dc == 3) ? 15 : -1)]
+		let t:DChar.hgp += values(hl)[: ((dc == 1) ? 2 : (dc == 2) ? 6 :
+														\(dc == 3) ? 14 : -1)]
 	elseif dc == 100
 		let hl = {}
 		let id = 1
@@ -286,9 +255,10 @@ function! s:InitializeDiffChar() abort
 			let nm = synIDattr(id, 'name')
 			if empty(nm) | break | endif
 			if index(values(s:DCharHL), nm) == -1 && id == synIDtrans(id) &&
-				\!empty(filter(['fg', 'bg', 'sp', 'bold', 'italic', 'reverse',
-							\'inverse', 'standout', 'underline', 'undercurl',
-								\'strike'], '!empty(synIDattr(id, v:val))'))
+				\!empty(filter(['fg', 'bg', 'sp', 'bold', 'underline',
+						\'undercurl', 'strikethrough', 'reverse', 'inverse',
+													\'italic', 'standout'],
+											'!empty(synIDattr(id, v:val))'))
 				let hl[reltimestr(reltime())[-2 :] . id] = nm
 			endif
 			let id += 1
@@ -847,12 +817,11 @@ function! s:HighlightDiffChar(key, lec) abort
 				if !has_key(hc, h) | let hc[h] = [] | endif
 				let hc[h] += [[l, c[0], c[1] - c[0] + 1]]
 			endfor
-			let pr = -(l * 10)
-			let t:DChar.mid[k][l] = [s:Matchaddpos(s:DCharHL.C, [[l]], pr - 1,
-											\-1, {'window': t:DChar.wid[k]})]
+			let t:DChar.mid[k][l] = [s:Matchaddpos(s:DCharHL.C, [[l]], -5, -1,
+												\{'window': t:DChar.wid[k]})]
 			for [h, c] in items(hc)
 				let t:DChar.mid[k][l] += map(range(0, len(c) - 1, 8),
-							\'s:Matchaddpos(h, c[v:val : v:val + 7], pr, -1,
+							\'s:Matchaddpos(h, c[v:val : v:val + 7], -3, -1,
 												\{"window": t:DChar.wid[k]})')
 			endfor
 		endfor
@@ -895,8 +864,8 @@ function! s:ShiftMatchaddLines(wid, lid, shift) abort
 		call map(copy(mx), 's:Matchdelete(v:val.id, a:wid)')
 		let lid[l + a:shift] = map(reverse(mx), 's:Matchaddpos(v:val.group,
 					\map(filter(items(v:val), "v:val[0] =~ ''^pos\\d\\+$''"),
-								\"[v:val[1][0] + a:shift] + v:val[1][1 :]"),
-					\v:val.priority - a:shift * 10, -1, {"window": a:wid})')
+			\"[v:val[1][0] + a:shift] + v:val[1][1 :]"), v:val.priority, -1,
+														\{"window": a:wid})')
 	endfor
 	return lid
 endfunction
@@ -1417,9 +1386,13 @@ endfunction
 if s:VF.DiffOptionSet
 	function! diffchar#ToggleDiffModeSync(event) abort
 		" a:event : 0 = OptionSet diff, 1 = VimEnter
-		if get(g:, 'DiffModeSync', 1) &&
-									\(a:event || v:option_old != v:option_new)
-			call s:SwitchDiffChar(a:event || v:option_new)
+		if !get(g:, 'DiffModeSync', 1) | return | endif
+		if s:VF.VOptionFixed
+			if a:event || v:option_old != v:option_new
+				call s:SwitchDiffChar(a:event || v:option_new)
+			endif
+		else
+			call s:SwitchDiffChar(a:event || &diff)
 		endif
 	endfunction
 else

@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change:	2021/02/12
-Version:	8.8
+Last Change:	2021/04/16
+Version:	8.9
 Author:		Rick Howe <rdcxy754@ybb.ne.jp>
 Copyright:	(c) 2014-2021 by Rick Howe
 
@@ -132,6 +132,11 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 8.9
+* Fixed not to overrule syntax highlighting.
+* Fixed to successfully sync with diff mode even without patch-8.1.414.
+* Changed the highlighting groups used in |g:DiffColors| option.
 
 Update : 8.8
 * Changed the highlighting groups used in |g:DiffColors| option, to completely
