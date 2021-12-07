@@ -8,15 +8,15 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2021/04/16
-" Version:		8.9
-" Author:		Rick Howe <rdcxy754@ybb.ne.jp>
+" Last Change:	2021/12/07
+" Version:		8.91
+" Author:		Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2021 by Rick Howe
 
 if exists('g:loaded_diffchar') || !has('diff') || v:version < 800
 	finish
 endif
-let g:loaded_diffchar = 8.9
+let g:loaded_diffchar = 8.91
 
 let s:save_cpo = &cpoptions
 set cpo&vim
@@ -46,7 +46,9 @@ for [key, plg, cmd] in [
 	\['<Leader>p', '<Plug>PutDiffCharPair',
 									\':call diffchar#CopyDiffCharPair(1)']]
 	if !hasmapto(plg, 'n') && empty(maparg(key, 'n'))
-		execute 'nmap <silent> ' . key . ' ' . plg
+		if get(g:, 'DiffCharDoMapping', 1)
+			execute 'nmap <silent> ' . key . ' ' . plg
+		endif
 	endif
 	execute 'nnoremap <silent> ' plg . ' ' . cmd . '<CR>'
 endfor
@@ -90,17 +92,25 @@ if g:DiffExpr && empty(&diffexpr) && &diffopt !~ 'internal'
 endif
 
 " an event group of this plugin
-augroup diffchar
-	autocmd!
-	if has('patch-8.0.736')			" OptionSet triggered with diff option
-		autocmd OptionSet diff call diffchar#ToggleDiffModeSync(0)
-		autocmd VimEnter *
-					\ if &diff | call diffchar#ToggleDiffModeSync(1) | endif |
-												\ autocmd! diffchar VimEnter
+if has('patch-8.0.736')			" OptionSet triggered with diff option
+	let g:DiffCharInitEvent = ['augroup diffchar', 'autocmd!',
+				\'autocmd OptionSet diff call diffchar#ToggleDiffModeSync(0)',
+															\'augroup END']
+	call execute(g:DiffCharInitEvent)
+	if has('patch-8.1.1113') || has('nvim-0.4.0')
+		call execute('autocmd diffchar VimEnter * ++once
+					\ if &diff | call diffchar#ToggleDiffModeSync(1) | endif')
 	else
-		autocmd FilterWritePost * call diffchar#SetDiffModeSync()
+		call execute('autocmd diffchar VimEnter *
+					\ if &diff | call diffchar#ToggleDiffModeSync(1) | endif |
+												\ autocmd! diffchar VimEnter')
 	endif
-augroup END
+else
+	let g:DiffCharInitEvent = ['augroup diffchar', 'autocmd!',
+				\'autocmd FilterWritePost * call diffchar#SetDiffModeSync()',
+															\'augroup END']
+	call execute(g:DiffCharInitEvent)
+endif
 
 let &cpoptions = s:save_cpo
 unlet s:save_cpo

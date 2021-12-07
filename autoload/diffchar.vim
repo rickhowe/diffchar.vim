@@ -8,9 +8,9 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2021/04/16
-" Version:		8.9
-" Author:		Rick Howe <rdcxy754@ybb.ne.jp>
+" Last Change:	2021/12/07
+" Version:		8.91
+" Author:		Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2021 by Rick Howe
 
 let s:save_cpo = &cpoptions
@@ -29,13 +29,15 @@ set cpo&vim
 let s:VF = {
 	\'DiffUpdated': exists('##DiffUpdated'),
 	\'WinScrolled': exists('##WinScrolled'),
+	\'WinClosed': exists('##WinClosed'),
 	\'GUIColors': has('gui_running') ||
 									\has('termguicolors') && &termguicolors,
 	\'DiffExecutable': executable('diff'),
 	\'PopupWindow': has('popupwin'),
 	\'FloatingWindow': exists('*nvim_create_buf'),
 	\'GetMousePos': exists('*getmousepos'),
-	\'WinExecute': exists('*win_execute'),
+	\'WinExecute': exists('*win_execute') &&
+								\(has('patch-8.1.1832') || has('nvim-0.5.0')),
 	\'DiffOptionSet': has('patch-8.0.736'),
 	\'CountString': has('patch-8.0.794'),
 	\'StrikeAttr': has('patch-8.0.1038') &&
@@ -44,7 +46,6 @@ let s:VF = {
 	\'ChangenrFixed': has('patch-8.0.1290'),
 	\'VOptionFixed': has('patch-8.1.414') || has('nvim-0.3.2'),
 	\'WinIDinMatch': has('patch-8.1.1084') || has('nvim-0.5.0'),
-	\'WinExecFixed': has('patch-8.1.1832'),
 	\'NvimDiffHLID': has('nvim') && !has('nvim-0.4.0')}
 
 function! s:SetDiffCharHL() abort
@@ -70,9 +71,8 @@ function! s:SetDiffCharHL() abort
 		endfor
 		call filter(dh.0, '!empty(v:val)')
 		let dh.1 = (hs == 'C' || hs == 'T') ?
-				\filter(copy(dh.0), 'v:key =~ "\\(fg\\|bg\\|sp\\)$"') : dh.0
-		let dh.2 = (hs == 'C') ? filter(copy(dh.1), 'v:key =~ "bg$"') :
-													\(hs == 'T') ? {} : dh.1
+								\filter(copy(dh.0), 'v:key =~ "bg$"') : dh.0
+		let dh.2 = (hs == 'T') ? {} : dh.1
 		" diff_hlID() incorrectly returns (hlID() - 1) until nvim 0.4.0
 		if s:VF.NvimDiffHLID | let dh.id -= 1 | endif
 		let s:DiffHL[hs] = dh
@@ -122,20 +122,20 @@ function! s:InitializeDiffChar() abort
 	" select current and next diff mode windows whose buffer is different
 	" do no initiate if more than 2 diff mode windows exist in a tab page and
 	" if a selected buffer already DChar highlighted in other tab pages
-	let cwid = win_getid()
-	let cbnr = winbufnr(cwid)
-	let nwid = filter(map(range(winnr() + 1, winnr('$')) +
+	let cw = win_getid()
+	let cb = winbufnr(cw)
+	let nw = filter(map(range(winnr() + 1, winnr('$')) +
 								\range(1, winnr() - 1), 'win_getid(v:val)'),
-					\'getwinvar(v:val, "&diff") && winbufnr(v:val) != cbnr')
-	let nbnr = map(copy(nwid), 'winbufnr(v:val)')
-	if !getwinvar(cwid, '&diff') || empty(nwid) || min(nbnr) != max(nbnr)
+						\'getwinvar(v:val, "&diff") && winbufnr(v:val) != cb')
+	let nb = map(copy(nw), 'winbufnr(v:val)')
+	if !getwinvar(cw, '&diff') || empty(nw) || min(nb) != max(nb)
 		return -1
 	endif
-	for tn in filter(range(1, tabpagenr('$')), 'tabpagenr() != v:val')
+	for tn in filter(range(1, tabpagenr('$')), 'v:val != tabpagenr()')
 		let dc = s:Gettabvar(tn, 'DChar')
 		if !empty(dc)
 			for bn in values(dc.bnr)
-				if index([cbnr, nbnr[0]], bn) != -1
+				if index([cb, nb[0]], bn) != -1
 					call s:EchoWarning('Both or either selected buffer already
 									\ highlighted in tab page ' . tn . '!')
 					return -1
@@ -148,8 +148,8 @@ function! s:InitializeDiffChar() abort
 	" define a DiffChar dictionary on this tab page
 	let t:DChar = {}
 	" windowID and bufnr
-	let t:DChar.wid = {'1': cwid, '2': nwid[0]}
-	let t:DChar.bnr = {'1': cbnr, '2': nbnr[0]}
+	let t:DChar.wid = {'1': cw, '2': nw[0]}
+	let t:DChar.bnr = {'1': cb, '2': nb[0]}
 	" diff mode synchronization flag
 	let t:DChar.dsy = get(g:, 'DiffModeSync', 1)
 	" a multiple of the current visible page to locally detect diff lines
@@ -511,58 +511,59 @@ function! diffchar#ResetDiffChar(...) abort
 	call s:ClearDiffChar(k, dl)
 	if 0 < t:DChar.dpv.pv | call s:ClearDiffCharPair(k) | endif
 	if last || !t:DChar.dsy && index(values(t:DChar.hlc), {}) != -1
-		call s:ToggleDiffCharEvent(0)
 		call s:ToggleDiffHL(0)
 		call s:ToggleDiffCharPair(0)
 		unlet t:DChar
+		call s:ToggleDiffCharEvent(0)
 	endif
 endfunction
 
 function! s:ToggleDiffCharEvent(on) abort
-	let ac = []
-	for k in [1, 2]
-		let bl = '<buffer=' . t:DChar.bnr[k] . '>'
-		let ac += [['BufWinLeave', bl,
-							\'s:BufWinLeaveDiffChar(' . t:DChar.wid[k] . ')']]
-		let ac += [['WinLeave', bl, 's:WinLeaveDiffChar(' . k . ')']]
-		if t:DChar.dsy
-			let ac += [['TextChanged', bl, 's:UpdateDiffChar(' . k . ', 0)']]
-			let ac += [['InsertLeave', bl, 's:UpdateDiffChar(' . k . ', 0)']]
-			if s:VF.DiffUpdated
-				let ac += [['DiffUpdated', bl,
-										\'s:UpdateDiffChar(' . k . ', 1)']]
-			endif
-			if t:DChar.dfp != 0
-				let ac += [[s:VF.WinScrolled ? 'WinScrolled' : 'CursorMoved',
-										\bl, 's:ScrollDiffChar(' . k . ')']]
-			endif
-		endif
-		if 0 < t:DChar.dpv.pv
-			let ac += [['CursorMoved', bl, 's:ShowDiffCharPair(' . k . ')']]
-		endif
-	endfor
-	let td = filter(map(filter(range(1, tabpagenr('$')),
-													\'tabpagenr() != v:val'),
+	call execute(g:DiffCharInitEvent)
+	let tv = filter(map(range(1, tabpagenr('$')),
 							\'s:Gettabvar(v:val, "DChar")'), '!empty(v:val)')
-	if empty(td)
-		let ac += [['TabEnter', '*', 's:AdjustGlobalOption()']]
-		let ac += [['ColorScheme', '*', 's:SetDiffCharHL()']]
-		if !s:VF.DiffUpdated && s:VF.DiffOptionSet
-			let ac += [['OptionSet', 'diffopt', 's:FollowDiffOption()']]
-		endif
-	endif
-	if !s:VF.DiffUpdated && !s:VF.DiffOptionSet
-		if t:DChar.dsy
-			if empty(filter(td, 'exists("v:val.dfl") && v:val.dsy'))
-				" save command to recover later in SwitchDiffChar()
-				let s:save_ch = a:on ? 's:ResetDiffModeSync()' : ''
-				let ac += [['CursorHold', '*', s:save_ch]]
+	if empty(tv) | return | endif
+	let ac = []
+	for td in tv
+		for k in [1, 2]
+			let bl = '<buffer=' . td.bnr[k] . '>'
+			if td.dsy
+				let ac += [['TextChanged,InsertLeave', bl,
+										\'s:UpdateDiffChar(' . k . ', 0)']]
+				if s:VF.DiffUpdated
+					let ac += [['DiffUpdated', bl,
+										\'s:UpdateDiffChar(' . k . ', 1)']]
+				endif
+				let ac += [[s:VF.WinClosed ? 'WinClosed' : 'BufWinLeave', bl,
+													\'s:WinClosedDiffChar()']]
+				if td.dfp != 0
+					let ac += [[
+						\s:VF.WinScrolled ? 'WinScrolled' : 'CursorMoved', bl,
+											\'s:ScrollDiffChar(' . k . ')']]
+				endif
 			endif
+			if 0 < td.dpv.pv
+				let ac += [['CursorMoved', bl,
+											\'s:ShowDiffCharPair(' . k . ')']]
+			endif
+		endfor
+	endfor
+	let ac += [['TabEnter', '*', 's:AdjustGlobalOption()']]
+	let ac += [['ColorScheme', '*', 's:SetDiffCharHL()']]
+	let ac += [[s:VF.WinClosed ? 'BufWinEnter' : 'BufWinEnter,WinEnter', '*',
+													\'s:RepairDiffChar()']]
+	if !s:VF.DiffUpdated
+		if s:VF.DiffOptionSet
+			let ac += [['OptionSet', 'diffopt', 's:FollowDiffOption()']]
+		elseif !empty(filter(tv, 'v:val.dsy'))
+			let s:save_ch = 's:ResetDiffModeSync()'
+			let ac += [['CursorHold', '*', s:save_ch]]
+			if !a:on | unlet s:save_ch | endif
 			call s:ChangeUTOpt(a:on)
 		endif
 	endif
-	call execute(map(ac, '"autocmd" . (a:on ? "" : "!") . " diffchar " .
-			\v:val[0] . " " . v:val[1] . (a:on ? " call " . v:val[2] : "")'))
+	call execute(map(ac, '"autocmd diffchar " . v:val[0] . " " . v:val[1] .
+													\" call " . v:val[2]'))
 endfunction
 
 function! s:FocusDiffLines(key, init) abort
@@ -830,10 +831,14 @@ endfunction
 
 function! s:ClearDiffChar(key, lines) abort
 	for k in (a:key == 1) ? [2, 1] : [1, 2]
-		if !s:VF.WinIDinMatch | call s:WinGotoID(t:DChar.wid[k]) | endif
-		for l in a:lines[k]
-			silent! call map(t:DChar.mid[k][l],
+		if win_id2win(t:DChar.wid[k]) != 0
+			if !s:VF.WinIDinMatch | call s:WinGotoID(t:DChar.wid[k]) | endif
+			for l in a:lines[k]
+				silent! call map(t:DChar.mid[k][l],
 									\'s:Matchdelete(v:val, t:DChar.wid[k])')
+			endfor
+		endif
+		for l in a:lines[k]
 			unlet t:DChar.mid[k][l]
 			unlet t:DChar.hlc[k][l]
 		endfor
@@ -1129,7 +1134,7 @@ endfunction
 function! s:ClearDiffCharPair(key) abort
 	if !empty(t:DChar.dpv.ch)
 		let [bk, id] = [t:DChar.dpv.ch.bk, t:DChar.dpv.ch.id]
-		if id != -1
+		if id != -1 && win_id2win(t:DChar.wid[bk]) != 0
 			if !s:VF.WinIDinMatch | call s:WinGotoID(t:DChar.wid[bk]) | endif
 			silent! call s:Matchdelete(id, t:DChar.wid[bk])
 			if !s:VF.WinIDinMatch
@@ -1459,18 +1464,18 @@ else
 endif
 
 function! s:SwitchDiffChar(on) abort
-	let cwid = win_getid()
-	let aw = cwid
+	let cw = win_getid()
+	let aw = cw
 	if exists('t:DChar') &&
-				\(a:on && index(values(t:DChar.bnr), winbufnr(cwid)) == -1 ||
-							\!a:on && index(values(t:DChar.wid), cwid) != -1)
+					\(a:on ? index(values(t:DChar.bnr), winbufnr(cw)) == -1 :
+										\index(values(t:DChar.wid), cw) != -1)
 		" diff mode ON on non-DChar buf || OFF on DChar win, try reset
 		for k in [1, 2]
 			if getwinvar(t:DChar.wid[k], '&diff')
 				let aw = t:DChar.wid[k]
 				call s:WinGotoID(aw)
 				call s:WinExecute('call diffchar#ResetDiffChar(1)')
-				call s:WinGotoID(cwid)
+				call s:WinGotoID(cw)
 				break
 			endif
 		endfor
@@ -1483,57 +1488,56 @@ function! s:SwitchDiffChar(on) abort
 			" 2 or more diff mode wins exists, try show
 			call s:WinGotoID(dw[0])
 			call s:WinExecute('call diffchar#ShowDiffChar()')
-			call s:WinGotoID(cwid)
+			call s:WinGotoID(cw)
 		endif
 	endif
 endfunction
 
-function! s:WinLeaveDiffChar(key, ...) abort
-	" just in case when a splitted DChar win is closed, BufWinLeave not happen
-	if !exists('t:DChar') | return | endif
-	if a:0 == 0
-		if len(filter(gettabinfo(tabpagenr())[0].windows,
-							\'getwinvar(v:val, "&diff") &&
-								\winbufnr(v:val) == t:DChar.bnr[a:key]')) > 1
-			" WinLeave always happens too early, do it later
-			call timer_start(0, function('s:WinLeaveDiffChar', [a:key]))
-		endif
-	else
-		if index(gettabinfo(tabpagenr())[0].windows, t:DChar.wid[a:key]) == -1
-			let cwid = win_getid()
-			let aw = t:DChar.wid[(a:key == 1) ? 2 : 1]
-			call s:WinGotoID(aw)
-			call s:WinExecute('call diffchar#ResetDiffChar(1)')
-			if get(g:, 'DiffModeSync', 1)
-				let aw = win_id2win(aw)
-				let dw = filter(map(range(aw, winnr('$')) + range(1, aw - 1),
-							\'win_getid(v:val)'), 'getwinvar(v:val, "&diff")')
-				if 1 < len(dw)
-					call s:WinGotoID(dw[0])
-					call s:WinExecute('call diffchar#ShowDiffChar()')
+function! s:WinClosedDiffChar() abort
+	" reset and show (if possible) DChar on WinClosed or BufWinLeave
+	for tn in range(1, tabpagenr('$'))
+		let dc = s:Gettabvar(tn, 'DChar')
+		if !empty(dc)
+			for k in [1, 2]
+				if s:VF.WinClosed ? dc.wid[k] == eval(expand('<afile>')) :
+										\dc.bnr[k] == eval(expand('<abuf>'))
+					let cw = win_getid()
+					call s:WinGotoID(dc.wid[k])
+					call s:WinExecute('call diffchar#ResetDiffChar(1)')
+					if dc.dsy
+						let dw = filter(gettabinfo(tn)[0].windows,
+													\'v:val != dc.wid[k] &&
+											\winbufnr(v:val) == dc.bnr[k] &&
+												\getwinvar(v:val, "&diff")')
+						if !empty(dw)
+							call s:WinGotoID(dw[0])
+							call s:WinExecute('call diffchar#ShowDiffChar()')
+						endif
+					endif
+					call s:WinGotoID(cw)
+					return
 				endif
-			endif
-			call s:WinGotoID(cwid)
+			endfor
 		endif
-	endif
+	endfor
 endfunction
 
-function! s:BufWinLeaveDiffChar(wid) abort
-	" BufWinLeave possibly happens in another tabpage (eg: tabonly)
-	let dc = s:Gettabvar(win_id2tabwin(a:wid)[0], 'DChar')
-	if !empty(dc)
-		let cwid = win_getid()
-		if s:VF.WinExecute && !s:VF.WinExecFixed &&
-							\win_id2tabwin(a:wid)[0] != win_id2tabwin(cwid)[0]
-			let s:VF.WinExecute = 0
-			let dc = {}
+function! s:RepairDiffChar() abort
+	" repair DChar whose win was accidentally closed on BufWinEnter/WinEnter
+	if exists('t:DChar')
+		let dc = t:DChar
+		let dw = filter(copy(dc.wid), 'win_id2win(v:val) != 0 &&
+			\winbufnr(v:val) == dc.bnr[v:key] && getwinvar(v:val, "&diff")')
+		if len(dw) == 1
+			let cw = win_getid()
+			call s:WinGotoID(values(dw)[0])
+			call s:WinExecute('call diffchar#ResetDiffChar(1)')
+			if dc.dsy
+				call s:WinExecute('call diffchar#ShowDiffChar()')
+			endif
+			call s:WinGotoID(cw)
 		endif
-		call s:WinGotoID(a:wid)
-		call s:WinExecute('call diffchar#ResetDiffChar(1)')
-		call s:WinGotoID(cwid)
-		if empty(dc) | let s:VF.WinExecute = 1 | endif
 	endif
-	call s:AdjustGlobalOption()
 endfunction
 
 function! s:ChecksumStr(str) abort
@@ -1617,13 +1621,13 @@ if !s:VF.DiffUpdated
 	if s:VF.DiffOptionSet
 		function! s:FollowDiffOption() abort
 			if v:option_old != v:option_new
-				let cwid = win_getid()
+				let cw = win_getid()
 				for dc in filter(map(range(1, tabpagenr('$')),
 							\'s:Gettabvar(v:val, "DChar")'), '!empty(v:val)')
 					call s:WinGotoID(dc.wid[1])
 					call s:WinExecute('call s:RedrawDiffChar(1, 0)')
 				endfor
-				call s:WinGotoID(cwid)
+				call s:WinGotoID(cw)
 			endif
 		endfunction
 	else

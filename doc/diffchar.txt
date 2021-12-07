@@ -8,9 +8,9 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change:	2021/04/16
-Version:	8.9
-Author:		Rick Howe <rdcxy754@ybb.ne.jp>
+Last Change:	2021/12/07
+Version:	8.91
+Author:		Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 Copyright:	(c) 2014-2021 by Rick Howe
 
 -----------------------------------------------------------------------------
@@ -132,6 +132,10 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 8.91
+* Updated to check a new WinClosed event (patch-8.2.3591) to appropriately
+  reset or repair the highlighted DiffChar units when a window is closed.
 
 Update : 8.9
 * Fixed not to overrule syntax highlighting.
