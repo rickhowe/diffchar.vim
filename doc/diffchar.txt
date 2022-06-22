@@ -21,13 +21,13 @@ highlights all the text in between the first and last different characters on
 a changed line. But this plugin will find the exact differences between them,
 character by character - so called DiffChar.
 
-For example, in diff mode: (*hl-DiffText* / `hl-DiffAdd`)
+For example, in diff mode: (|hl-DiffText| / `hl-DiffAdd`)
 	+-------------------------------------------------+
-	|The *quick_brown_fox_jumps_over_the_lazy* dog.     |
+	|The |quick_brown_fox_jumps_over_the_lazy| dog.     |
 	|~                                                |
 	|~                                                |
 	|=================================================|
-	|The *lazy_fox_jumps_over_the_quick_brown* dog.     |
+	|The |lazy_fox_jumps_over_the_quick_brown| dog.     |
 	|~                                                |
 	|~                                                |
 	|=================================================|
@@ -36,11 +36,11 @@ For example, in diff mode: (*hl-DiffText* / `hl-DiffAdd`)
 
 this plugin will exactly show the changed and added units:
 	+-------------------------------------------------+
-	|The *quick* `brown_`fox jumps over the *lazy* dog.     |
+	|The |quick| `brown_`fox jumps over the |lazy| dog.     |
 	|~                                                |
 	|~                                                |
 	|=================================================|
-	|The *lazy* fox jumps over the *quick* `brown_`dog.     |
+	|The |lazy| fox jumps over the |quick| `brown_`dog.     |
 	|~                                                |
 	|~                                                |
 	|=================================================|
