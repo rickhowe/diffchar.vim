@@ -90,7 +90,7 @@ function! s:ShowDiffChar(...) abort
 			endif
 		endif
 	endfor
-	if !empty(lc[1]) && !empty(lc[2])
+	if 0 < init || !empty(lc[ak])
 		call s:HighlightDiffChar(lc)
 		if 0 < init
 			call s:ToggleDiffCharEvent(1)
@@ -100,8 +100,6 @@ function! s:ShowDiffChar(...) abort
 			call s:ToggleDiffCharPair(1)
 			call s:ShowDiffCharPair(ak)
 		endif
-	else
-		if init == 2 | unlet t:DChar | endif
 	endif
 endfunction
 
