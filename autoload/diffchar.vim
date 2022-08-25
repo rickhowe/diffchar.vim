@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change:	2022/06/01
-" Version:		9.0 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change:	2022/08/25
+" Version:		9.01 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:		Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 " Copyright:	(c) 2014-2022 by Rick Howe
 
@@ -293,6 +293,7 @@ function! s:SetDiffCharHL() abort
 		let dh.2 = (hs == 'T') ? {} : dh.1
 		let s:DiffHL[hs] = dh
 	endfor
+	if empty(s:DiffHL.C.1) | let s:DiffHL.T.1 = {} | endif	" no bg in C
 	let s:DCharHL = {'A': 'DiffAdd', 'D': 'DiffDelete', 'n': 'LineNr'}
 	if has('nvim')
 		let s:DCharHL.c = 'TermCursor'

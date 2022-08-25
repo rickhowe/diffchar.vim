@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change:	2022/07/08
-Version:	9.0 (on or after patch-8.1.1418 and nvim-0.5.0)
+Last Change:	2022/08/25
+Version:	9.01 (on or after patch-8.1.1418 and nvim-0.5.0)
 Author:		Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 Copyright:	(c) 2014-2022 by Rick Howe
 
@@ -108,6 +108,7 @@ Algorithm" developed by S.Wu, et al., which always finds an optimum sequence.
 But it takes time to check a long and dissimilar line. To improve the
 performance, the algorithm is also implemented in Vim9 script.
 
+See also ~
 For a flexible and partial diff comparison, see |spotdiff.vim|
 (https://github.com/rickhowe/spotdiff.vim) plugin.
 
@@ -159,6 +160,9 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 9.01
+* Fixed to work on a |hl-Diff| highlighting group even if it is linked.
 
 Update : 9.0
 * Enhanced to make diff units easier to read when "indent-heuristic" is

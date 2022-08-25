@@ -86,6 +86,7 @@ Algorithm" developed by S.Wu, et al., which always finds an optimum sequence.
 But it takes time to check a long and dissimilar line. To improve the
 performance, the algorithm is also implemented in Vim9 script.
 
+#### See also
 For a flexible and partial diff comparison, see
 [spotdiff.vim](https://github.com/rickhowe/spotdiff.vim) plugin.
 
