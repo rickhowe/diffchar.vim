@@ -30,15 +30,18 @@ will be kept updated while editing.
 This plugin shows the diffs based on a `g:DiffUnit`. Its default is 'Word1'
 and it handles a `\w\+` word and a `\W` character as a diff unit. There are other
 types of word provided and you can also set 'Char' to compare character by 
-character.
+character. In addition, you can specify one or more diff unit delimiters, such
+as comma (','), colon (':'), tab ("\t"), and HTML tag symbols ('<' and '>'),
+and also specify a custom pattern in the `g:DiffUnit`.
 
 #### Diff matching colors
 In diff mode, the corresponding `hl-DiffChange` lines are compared between two
-windows. You can set a number of matching colors to a `g:DiffColors` to make
-it easy to find the corresponding units between two windows. As a default, all
-the changed units are highlighted with `hl-DiffText`. In addition,
-`hl-DiffAdd` is always used for the added units and both the previous and next
-character of the deleted units are shown in bold/underline.
+windows. As a default, all the changed units are highlighted with
+`hl-DiffText`. You can set `g:DiffColors` to use more than one matching color
+to make it easy to find the corresponding units between two windows. The
+number of colors depends on the color scheme. In addition, `hl-DiffAdd` is
+always used for the added units and both the previous and next character of
+the deleted units are shown in bold/underline.
 
 #### Diff pair visible
 While showing the exact differences, when the cursor is moved on a diff unit,
@@ -100,15 +103,21 @@ For a flexible and partial diff comparison, see
   | 'Word1' | `\w\+` word and any `\W` single character (default) |
   | 'Word2' | non-space and space words |
   | 'Word3' | `\<` or `\>` character class boundaries (set by `iskeyword` option) |
+  | 'word' | see `word` |
+  | 'WORD' | see `WORD` |
+  | '[{del}]' | one or more diff unit delimiters (e.g. "[,:\t<>]") |
+  | '/{pat}/' | a pattern to split into diff units (e.g. '/.\{4}\zs/') |
 
 * `g:DiffColors`, `t:DiffColors`: Matching colors for changed units
 
   | Value | Description |
   | --- | --- |
   | 0 | `hl-DiffText` (default) |
-  | 1 | `hl-DiffText` + up to 3 other highlights |
-  | 2 | `hl-DiffText` + up to 7 other highlights |
-  | 3 | `hl-DiffText` + up to 15 other highlights |
+  | 1 | `hl-DiffText` + a few (3, 4, ...) highlight groups |
+  | 2 | `hl-DiffText` + several (7, 8, ...) highlight groups |
+  | 3 | `hl-DiffText` + many (11, 12, ...) highlight groups |
+  | 100 | all available highlight groups in random order |
+  | [{hlg}] | a list of your favorite highlight groups |
 
 * `g:DiffPairVisible`, `t:DiffPairVisible`: Visibility of corresponding diff units
   
