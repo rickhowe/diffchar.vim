@@ -8,10 +8,11 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2022/12/11
-Version:     9.2 (on or after patch-8.1.1418 and nvim-0.5.0)
+Last Change: 2023/01/10
+Version:     9.3 (on or after patch-8.1.1418 and nvim-0.5.0)
 Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
-Copyright:   (c) 2014-2022 by Rick Howe
+Copyright:   (c) 2014-2023 Rick Howe
+License:     MIT
 
 -----------------------------------------------------------------------------
 INTRODUCTION                                           *diffchar*
@@ -169,6 +170,11 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 9.3
+* Improved to follow the 'wincolor' option and show the colors accordingly.
+* Fixed to work on some color scheme in which the "g:colors_name" variable is
+  different from its color scheme name.
 
 Update : 9.2
 * Fixed the plugin error when 3 or more windows turn to be diff mode.
