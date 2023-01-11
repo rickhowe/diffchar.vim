@@ -8,10 +8,11 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2022/12/11
-" Version:     9.2 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change: 2023/01/10
+" Version:     9.3 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
-" Copyright:   (c) 2014-2022 by Rick Howe
+" Copyright:   (c) 2014-2023 Rick Howe
+" License:     MIT
 
 let s:save_cpo = &cpoptions
 set cpo&vim
@@ -307,9 +308,7 @@ endfunction
 function! s:SetDiffCharHL() abort
   let hm = (has('gui_running') || has('termguicolors') && &termguicolors) ?
                                                               \'gui' : 'cterm'
-  let at = ['bold', 'underline', 'undercurl', 'strikethrough', 'reverse',
-                                            \'inverse', 'italic', 'standout']
-  " set or reset original diff hl
+  " set diff hl in original and DChar modes
   let s:DiffHL = {'A': 'DiffAdd', 'C': 'DiffChange', 'D': 'DiffDelete',
                                                             \'T': 'DiffText'}
   for [hs, hl] in items(s:DiffHL)
@@ -317,51 +316,43 @@ function! s:SetDiffCharHL() abort
     let dh.id = hlID(hl)
     let dh.it = synIDtrans(dh.id)       " in case of linked
     let dh.nm = synIDattr(dh.it, 'name')
-    " 0 : original and for single color, 1 : for multi color
+    " 0 : for original, 1 : for DChar
     let dh[0] = {}
     for hc in ['fg', 'bg']
       let dh[0][hm . hc] = synIDattr(dh.it, hc)
     endfor
-    let dh[0][hm] = join(filter(copy(at),
+    let dh[0][hm] = join(filter(['bold', 'underline', 'undercurl',
+                \'strikethrough', 'reverse', 'inverse', 'italic', 'standout'],
                                     \'!empty(synIDattr(dh.it, v:val))'), ',')
     call map(dh[0], '!empty(v:val) ? v:val : "NONE"')
-    let dh[1] = map(copy(dh[0]), (hs == 'C') ? 'v:key =~ "bg$" ?
+    let dh[1] = map(copy(dh[0]), (hs == 'C') ? 'v:key == hm . "bg" ?
                           \v:val : "NONE"' : (hs == 'T') ? '"NONE"' : 'v:val')
     let s:DiffHL[hs] = dh
   endfor
-  " set DChar normal hl
   let s:DCharHL = {}
-  let s:DCharHL.n = 'dcNormal'
-  call execute('highlight clear ' . s:DCharHL.n)
-  call execute('highlight ' . s:DCharHL.n . ' ' . hm . 'fg=fg', 'silent!')
-  call execute('highlight ' . s:DCharHL.n . ' ' . hm . 'bg=bg', 'silent!')
-  let [fn, bn] = map(['fg#', 'bg#'], 'synIDattr(hlID(s:DCharHL.n), v:val)')
-  if empty(fn) | let fn = 'NONE' | endif
-  if empty(bn) | let bn = 'NONE' | endif
+  let s:DCharHL.n = 'Normal'
   " set DChar cursor hl
-  let s:DCharHL.c = 'dcCursor'
-  let id = hlID(has('nvim') ? 'TermCursor' : 'Cursor')
-  let [fg, bg] = map(['fg#', 'bg#'], 'synIDattr(id, v:val)')
-  call execute('highlight clear ' . s:DCharHL.c)
-  call execute('highlight ' . s:DCharHL.c . ' ' . (!empty(bg) ?
-              \join([hm . 'fg=' . (!empty(fg) ? fg : 'NONE'), hm . 'bg=' . bg,
-        \hm . '=' . join(filter(copy(at), '!empty(synIDattr(id, v:val))') +
-                                                      \['nocombine'], ',')]) :
-        \join([hm . 'fg=' . fn, hm . 'bg=' . bn, hm . '=reverse,nocombine'])))
+  let s:DCharHL.c = has('nvim') ? 'TermCursor' : 'Cursor'
+  if !empty(filter(['fg', 'bg'],
+                              \'empty(synIDattr(hlID(s:DCharHL.c), v:val))'))
+    let s:DCharHL.c = 'dcCursor'
+    for at in ['NONE', hm . 'fg=fg', hm . 'bg=bg', hm . '=reverse']
+      call execute(join(['highlight', s:DCharHL.c, at]), 'silent!')
+    endfor
+  endif
   " set DChar diff hl
   for [fs, ts, th, ta] in [['C', 'C', 'dcDiffChange', ''],
                               \['T', 'T', 'dcDiffText', ''],
                               \['A', 'A', 'dcDiffAdd', ''],
                               \['C', 'E', 'dcDiffDelEdge', 'bold,underline'],
-    \['D', 'D', 'dcDiffDelete', s:VF.StrikeAttr ? 'strikethrough' : '']]
+          \['D', 'D', 'dcDiffDelete', s:VF.StrikeAttr ? 'strikethrough' : '']]
     let fa = copy(s:DiffHL[fs][0])
-    let fa[hm] = ((fa[hm] != 'NONE') ? fa[hm] . ',' : '') .
-                                  \(!empty(ta) ? ta . ',' : '') . 'nocombine'
-    if fa[hm . 'fg'] == 'NONE' | let fa[hm . 'fg'] = fn | endif
-    if fa[hm . 'bg'] == 'NONE' | let fa[hm . 'bg'] = bn | endif
-    call execute('highlight clear ' . th)
-    call execute('highlight ' . th . ' ' .
-                                    \join(map(items(fa), 'join(v:val, "=")')))
+    if !empty(ta)
+      let fa[hm] = ((fa[hm] != 'NONE') ? fa[hm] . ',' : '') . ta
+    endif
+    for at in ['NONE'] + map(items(fa), 'join(v:val, "=")')
+      call execute(join(['highlight', th, at]), 'silent!')
+    endfor
     let s:DCharHL[ts] = th
   endfor
 endfunction
@@ -380,19 +371,16 @@ function! s:GetDiffCharOptions() abort
 endfunction
 
 function! s:ToggleDiffHL(on) abort
-  let id = a:on && 1 < len(t:DChar.hgp)
   for dh in values(s:DiffHL)
     call execute(join(['highlight', dh.nm] +
-                                    \map(items(dh[id]), 'join(v:val, "=")')))
+                                  \map(items(dh[a:on]), 'join(v:val, "=")')))
   endfor
 endfunction
 
-function! s:RefreshDiffCharHL() abort
-  " called on TabEnter or ColorScheme
+function! s:RefreshDiffCharHL(event) abort
+  " a:event : 0 = TabEnter, 1 = ColorScheme
+  if a:event == 1 | call s:SetDiffCharHL() | endif
   let on = exists('t:DChar')
-  if exists('g:colors_name') && expand('<amatch>') == g:colors_name
-    call s:SetDiffCharHL()                        " on ColorScheme
-  endif
   call s:ToggleDiffHL(on)
   if on
     " redraw DChar units with the latest colorschme
@@ -429,7 +417,8 @@ function! s:ToggleDiffCharEvent(on) abort
       endif
     endfor
   endfor
-  let ac += [['TabEnter,ColorScheme', '*', 's:RefreshDiffCharHL()']]
+  let ac += [['TabEnter', '*', 's:RefreshDiffCharHL(0)']]
+  let ac += [['ColorScheme', '*', 's:RefreshDiffCharHL(1)']]
   let ac += [[s:VF.WinClosed ? 'BufWinEnter' : 'BufWinEnter,WinEnter', '*',
                                                       \'s:RepairDiffChar()']]
   let ac += [['DiffUpdated', '*', 's:UpdateDiffChar()']]
@@ -1149,15 +1138,14 @@ function! s:ClearDiffCharPair(key) abort
   endif
 endfunction
 
-function! diffchar#ToggleDiffModeSync() abort
-  " called on OptionSet diff or VimEnter
+function! diffchar#ToggleDiffModeSync(...) abort
+  " a:0 : 0 = OptionSet diff,  1 = VimEnter
   if !exists('t:DChar') && get(t:, 'NoDiffChar', get(g:, 'NoDiffChar', 0))
     return
   endif
-  let os = (expand('<amatch>') == 'diff')         " on OptionSet diff
-  if !os || v:option_old != v:option_new
+  if a:0 || v:option_old != v:option_new
     let cw = win_getid()
-    if exists('t:DChar') && ((!os || v:option_new) ?
+    if exists('t:DChar') && ((a:0 || v:option_new) ?
                             \index(values(t:DChar.bnr), winbufnr(cw)) == -1 :
                                         \index(values(t:DChar.wid), cw) != -1)
       " diff mode ON on non-DChar buf || OFF on DChar win, try reset
