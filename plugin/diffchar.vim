@@ -8,11 +8,10 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2023/01/10
-" Version:     9.3 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change: 2022/12/11
+" Version:     9.2 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
-" Copyright:   (c) 2014-2023 Rick Howe
-" License:     MIT
+" Copyright:   (c) 2014-2022 by Rick Howe
 
 " This 9.x version requires:
 " * the OptionSet autocommand event triggered with the diff option
@@ -27,7 +26,7 @@ if exists('g:loaded_diffchar') || !has('diff') || v:version < 800 ||
                                                       \!exists('*win_execute')
   finish
 endif
-let g:loaded_diffchar = 9.3
+let g:loaded_diffchar = 9.2
 
 let s:save_cpo = &cpoptions
 set cpo&vim
@@ -85,7 +84,7 @@ let g:DiffCharInitEvent = ['augroup diffchar', 'autocmd!',
                                                               \'augroup END']
 call execute(g:DiffCharInitEvent)
 call execute('autocmd diffchar VimEnter * ++once
-                    \ if &diff | call diffchar#ToggleDiffModeSync(1) | endif')
+                    \ if &diff | call diffchar#ToggleDiffModeSync() | endif')
 
 let &cpoptions = s:save_cpo
 unlet s:save_cpo

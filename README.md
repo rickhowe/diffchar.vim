@@ -143,7 +143,3 @@ For a flexible and partial diff comparison, see
 ### Demo
 
 ![demo](demo.gif)
-
-### License
-
-MIT
