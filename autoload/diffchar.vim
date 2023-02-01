@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2023/01/10
-" Version:     9.3 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change: 2023/02/01
+" Version:     9.4 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 " Copyright:   (c) 2014-2023 Rick Howe
 " License:     MIT
@@ -31,6 +31,7 @@ let s:VF = {
   \'StrikeAttr': has('gui_running') || !empty(&t_Ts) && !empty(&t_Te),
   \'ScreenPos': exists('*screenpos') && has('patch-8.2.4204'),
   \'MatchAddMore': has('patch-9.0.0620') || has('nvim-0.9.0'),
+  \'LuaVimDiff': has('nvim') && type(luaeval('vim.diff')) == v:t_func,
   \'Vim9Script': has('vim9script')}
 
 function! s:ShowDiffChar(...) abort
@@ -57,32 +58,36 @@ function! s:ShowDiffChar(...) abort
         let tu[k].u = split(t:DChar.opt.iw == 0 ? tu[k].t :
                 \substitute(tu[k].t, (t:DChar.opt.iw == 1) ? '\s\+' : '\s\+$',
                                                       \'', 'g'), t:DChar.upa)
-        if t:DChar.opt.iw == 2 && !empty(tu[k].u)
-          for s in range(len(tu[k].u) - 1, 1, -1)
-            if tu[k].u[s - 1] . tu[k].u[s] =~ '^\s\+$'
+        let tu[k].w = (t:DChar.opt.iw == 2 && tu[k].t =~ '\s\{2,}') ? 2 :
+                          \(t:DChar.opt.iw == 1 && tu[k].t =~ '\s\+') ? 1 : 0
+        if tu[k].w == 2
+          let s = 0
+          while 1
+            let s = match(tu[k].u, '^\s\+$', s)
+            if s == -1 || len(tu[k].u) <= s | break | endif
+            let s += 1
+            while tu[k].u[s] =~ '^\s\+$'
               let tu[k].u[s - 1] .= tu[k].u[s]
               unlet tu[k].u[s]
-            endif
-          endfor
+            endwhile
+          endwhile
         endif
       endfor
       if tu[1].u !=# tu[2].u
         let uu = [copy(tu[1].u), copy(tu[2].u)]
-        if t:DChar.opt.iw == 2
+        if tu[k].w == 2
           for k in [1, 2]
-            call map(tu[k].u, '(v:val =~ "^\\s\\+$") ? " " : v:val')
+            call map(tu[k].u, '(v:val =~ "^\\s\\{2,}$") ? " " : v:val')
           endfor
         endif
         let [tu[1].c, tu[2].c] = s:GetDiffUnitPos(uu,
-                          \s:TraceDiffChar(tu[1].u, tu[2].u, t:DChar.opt.ih))
+                              \t:DChar.dtf(tu[1].u, tu[2].u, t:DChar.opt.ih))
         for k in [1, 2]
-          if t:DChar.opt.iw == 1
-            if tu[k].t =~ '\s\+'
-              let pc = filter(range(1, len(tu[k].t)),
+          if tu[k].w == 1
+            let pc = filter(range(1, len(tu[k].t)),
                                               \'tu[k].t[v:val - 1] !~ "\\s"')
-              call map(tu[k].c,
+            call map(tu[k].c,
                     \'[v:val[0], [pc[v:val[1][0] - 1], pc[v:val[1][1] - 1]]]')
-            endif
           endif
           let lc[k][tu[k].l] = tu[k].c
           let t:DChar.cks[k][tu[k].l] = s:ChecksumStr(tu[k].b)
@@ -162,7 +167,7 @@ function! s:InitializeDiffChar(init) abort
     let t:DChar.wid = {'1': cw, '2': nw[0]}
     let t:DChar.bnr = {'1': cb, '2': nb[0]}
   endif
-  let t:DChar.dfp = abs(get(t:, 'DiffPages', get(g:, 'DiffPages', 3)))
+  let t:DChar.dfp = s:DiffCharOpt('DiffFocusPages')
   let t:DChar.opt = s:GetDiffCharOptions()
   let t:DChar.lcc = s:GetLineColCnr()
   let t:DChar.dfl = s:FocusDiffLines(1)
@@ -172,6 +177,8 @@ function! s:InitializeDiffChar(init) abort
   let t:DChar.mid = {'1': {}, '2': {}}
   let t:DChar.hlc = {'1': {}, '2': {}}
   let t:DChar.cks = {'1': {}, '2': {}}
+  let t:DChar.dtf = (s:VF.LuaVimDiff && s:DiffCharOpt('DiffBuiltinFunc')) ? 
+                      \function('s:LuaVimDiff') : function('s:TraceDiffChar')
 endfunction
 
 function! s:GetDiffSplitRegExp(du) abort
@@ -361,15 +368,21 @@ endfunction
 
 function! s:GetDiffCharOptions() abort
   let do = split(&diffopt, ',')
-  return {'ut': get(t:, 'DiffUnit', g:DiffUnit),
-          \'cl': get(t:, 'DiffColors', g:DiffColors),
-          \'pv': get(t:, 'DiffPairVisible', g:DiffPairVisible),
+  return {'ut': s:DiffCharOpt('DiffUnit'),
+          \'cl': s:DiffCharOpt('DiffColors'),
+          \'pv': s:DiffCharOpt('DiffPairVisible'),
           \'cn': get(g:, 'colors_name', 'default'),
           \'ic': index(do, 'icase') != -1,
           \'iw': (index(do, 'iwhiteall') != -1) ? 1 :
                                       \(index(do, 'iwhite') != -1) ? 2 :
                                       \(index(do, 'iwhiteeol') != -1) ? 3 : 0,
           \'ih': index(do, 'indent-heuristic') != -1}
+endfunction
+
+function! s:DiffCharOpt(opt) abort
+  return get(t:, a:opt, get(g:, a:opt,
+    \{'NoDiffChar': 0, 'DiffUnit': 'Word1', 'DiffColors': 0,
+    \'DiffPairVisible': 1, 'DiffFocusPages': 3, 'DiffBuiltinFunc': 1}[a:opt]))
 endfunction
 
 function! s:ToggleDiffHL(on) abort
@@ -410,7 +423,7 @@ function! s:ToggleDiffCharEvent(on) abort
       let bl = '<buffer=' . td.bnr[k] . '>'
       let ac += [[s:VF.WinClosed ? 'WinClosed' : 'BufWinLeave', bl,
                                                     \'s:WinClosedDiffChar()']]
-      if td.dfp != 0
+      if 0 < td.dfp
         let ac += [[s:VF.WinScrolled ? 'WinScrolled' : 'CursorMoved', bl,
                                                       \'s:ScrollDiffLines()']]
       endif
@@ -430,14 +443,14 @@ endfunction
 
 function! s:TraceDiffChar(u1, u2, ih) abort
   " An O(NP) Sequence Comparison Algorithm
-  let [n1, n2] = [len(a:u1), len(a:u2)]
-  if a:u1 ==# a:u2 | return repeat('=', n1)
-  elseif n1 == 0 | return repeat('+', n2)
-  elseif n2 == 0 | return repeat('-', n1)
+  let [u1, u2, eq, e1, e2] = [a:u1, a:u2, '=', '-', '+']
+  let [n1, n2] = [len(u1), len(u2)]
+  if u1 ==# u2 | return repeat(eq, n1)
+  elseif n1 == 0 | return repeat(e2, n2)
+  elseif n2 == 0 | return repeat(e1, n1)
   endif
-  " reverse to be N >= M
   let [N, M, u1, u2, e1, e2] = (n1 >= n2) ?
-              \[n1, n2, a:u1, a:u2, '-', '+'] : [n2, n1, a:u2, a:u1, '+', '-']
+                          \[n1, n2, u1, u2, e1, e2] : [n2, n1, u2, u1, e2, e1]
   let D = N - M
   let fp = repeat([-1], M + N + 1)
   let etree = []    " [next edit, previous p, previous k]
@@ -451,13 +464,12 @@ function! s:TraceDiffChar(u1, u2, ih) abort
                         \[fp[k + 1], [e2, [(k < D) ? p - 1 : p, k + 1]]]
       let x = y - k
       while x < M && y < N && u2[x] ==# u1[y]
-        let epk[k][0] .= '=' | let [x, y] += [1, 1]
+        let epk[k][0] .= eq | let [x, y] += [1, 1]
       endwhile
       let fp[k] = y
     endfor
     let etree += [epk]
   endwhile
-  " create a shortest edit script (SES) from last p and k
   let ses = ''
   while 1
     let ses = etree[p][k][0] . ses
@@ -470,7 +482,7 @@ function! s:TraceDiffChar(u1, u2, ih) abort
     " =\++\+ or =\+-\+ blocks (AB vs AxByAB : =+=+++ -> ++++==)
     let [p1, p2, qc, et, ex] = [-1, -1, 0, '', '']
     for ed in reverse(split(ses, '[+-]\+\zs'))
-      let es = ed . et | let qe = count(ed, '=')
+      let es = ed . et | let qe = count(ed, eq)
       if 0 < qe
         let [q1, q2] = [count(es, e1), count(es, e2)]
         let [uu, pp, qq] = (qe <= q1 && q2 == 0) ? [u1, p1, q1] :
@@ -487,6 +499,23 @@ function! s:TraceDiffChar(u1, u2, ih) abort
   endif
   return ses
 endfunction
+
+if s:VF.LuaVimDiff
+function! s:LuaVimDiff(u1, u2, ih) abort
+  " Builtin diff function
+  let [u1, u2, eq, e1, e2] = [a:u1, a:u2, '=', '-', '+']
+  let [n1, n2] = [len(u1), len(u2)]
+  if u1 ==# u2 | return repeat(eq, n1)
+  elseif n1 == 0 | return repeat(e2, n2)
+  elseif n2 == 0 | return repeat(e1, n1)
+  endif
+  let nx = n1 + n2
+  let ses = v:lua.vim.diff(join(u1, "\n") . "\n", join(u2, "\n") . "\n",
+        \{'algorithm': 'minimal', 'indent_heuristic': a:ih ? v:true : v:false,
+                                        \'ctxlen': nx, 'interhunkctxlen': nx})
+  return tr(join(map(split(ses, "\n")[1:], 'v:val[0]'), ''), ' ', eq)
+endfunction
+endif
 
 function! s:GetDiffUnitPos(uu, es) abort
   if empty(a:uu[0])
@@ -620,7 +649,7 @@ function! s:ScrollDiffLines(...) abort
   if 0 < scl
     let dfl = s:FocusDiffLines(0)
     if t:DChar.dfl != dfl
-      " reset/show DChar lines on dfl changes
+      " show incremental DChar lines on dfl changes
       let adl = filter(copy(dfl[ak]), 'index(t:DChar.dfl[ak], v:val) == -1')
       let t:DChar.dfl = dfl
       if !empty(adl)
@@ -633,7 +662,7 @@ endfunction
 function! s:FocusDiffLines(init) abort
   " a:init : initiate dfl (do not use existing dfl)
   let dfl = {}
-  if t:DChar.dfp == 0
+  if t:DChar.dfp <= 0
     if a:init
       for k in [1, 2]
         call win_execute(t:DChar.wid[k], 'let dfl[k] =
@@ -1141,10 +1170,8 @@ function! s:ClearDiffCharPair(key) abort
 endfunction
 
 function! diffchar#ToggleDiffModeSync(...) abort
-  " a:0 : 0 = OptionSet diff,  1 = VimEnter
-  if !exists('t:DChar') && get(t:, 'NoDiffChar', get(g:, 'NoDiffChar', 0))
-    return
-  endif
+  " a:0 : 0 = OptionSet diff, 1 = VimEnter
+  if !exists('t:DChar') && s:DiffCharOpt('NoDiffChar') | return | endif
   if a:0 || v:option_old != v:option_new
     let cw = win_getid()
     if exists('t:DChar') && ((a:0 || v:option_new) ?
@@ -1225,16 +1252,16 @@ endfunction
 if s:VF.Vim9Script
 function! s:DefVim9DiffChar() abort
 def! s:TraceDiffChar(u1: list<string>, u2: list<string>, ih: bool): string
+  var eq = '=' | var e1 = '-' | var e2 = '+'
   var n1 = len(u1) | var n2 = len(u2)
-  if u1 ==# u2 | return repeat('=', n1)
-  elseif n1 == 0 | return repeat('+', n2)
-  elseif n2 == 0 | return repeat('-', n1)
+  if u1 ==# u2 | return repeat(eq, n1)
+  elseif n1 == 0 | return repeat(e2, n2)
+  elseif n2 == 0 | return repeat(e1, n1)
   endif
   var N: number | var M: number
   var v1: list<string> | var v2: list<string>
-  var e1: string | var e2: string
   [N, M, v1, v2, e1, e2] = (n1 >= n2) ?
-                      [n1, n2, u1, u2, '-', '+'] : [n2, n1, u2, u1, '+', '-']
+                          [n1, n2, u1, u2, e1, e2] : [n2, n1, u2, u1, e2, e1]
   var D = N - M
   var fp = repeat([-1], M + N + 1)
   var etree = []
@@ -1249,7 +1276,7 @@ def! s:TraceDiffChar(u1: list<string>, u2: list<string>, ih: bool): string
                         [fp[k + 1], [e2, [(k < D) ? p - 1 : p, k + 1]]]
       x = y - k
       while x < M && y < N && v2[x] ==# v1[y]
-        epk[k][0] ..= '=' | [x, y] += [1, 1]
+        epk[k][0] ..= eq | [x, y] += [1, 1]
       endwhile
       fp[k] = y
     endfor
@@ -1266,7 +1293,7 @@ def! s:TraceDiffChar(u1: list<string>, u2: list<string>, ih: bool): string
   if ih
     var p1 = -1 | var p2 = -1 | var qc = 0 | var et = '' | var ex = ''
     for ed in reverse(split(ses, '[+-]\+\zs'))
-      var es = ed .. et | var qe = count(ed, '=')
+      var es = ed .. et | var qe = count(ed, eq)
       if 0 < qe
         var q1 = count(es, e1) | var q2 = count(es, e2)
         var vv: list<string> | var pp: number | var qq: number

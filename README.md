@@ -87,10 +87,12 @@ to read.
 To find the exact differences, this plugin uses "An O(NP) Sequence Comparison
 Algorithm" developed by S.Wu, et al., which always finds an optimum sequence.
 But it takes time to check a long and dissimilar line. To improve the
-performance, the algorithm is also implemented in Vim9 script.
+performance, the algorithm is also implemented in Vim9 script. In addition,
+if available in nvim, this plugin uses a builtin Lua `vim.diff()` function and
+makes it much faster.
 
 #### See also
-For a flexible and partial diff comparison, see
+For a range and area selectable partial comparison, see
 [spotdiff.vim](https://github.com/rickhowe/spotdiff.vim) plugin.
 
 ### Options
