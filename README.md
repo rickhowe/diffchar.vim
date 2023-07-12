@@ -62,13 +62,13 @@ Like line-based `:diffget`/`:diffput` and `do`/`dp` vim commands, you can use
 unit, where the cursor is on, between 2 buffers and undo its difference. Those
 keymaps are configurable in your vimrc and so on.
 
-#### Find diff lines incrementally
-When the diff mode begins, this plugin locally finds the `hl-DiffChange` lines
-in the limited range of the current visible and its upper/lower lines of a
-window. And each time a cursor is moved on to other ranges upon scrolling or
-searching, the new `hl-DiffChange` lines will be incrementally found in that
-range. Which means, independently of the file size, the number of lines to be
-found and then the time consumed are always constant.
+#### Check diff lines locally
+When the diff mode begins, this plugin locally checks the `hl-DiffChange`
+lines in the limited range of the current visible and its upper/lower lines of
+a window. And each time a cursor is moved on to another range upon scrolling
+or searching, those diff lines will be checked in that range. Which means,
+independently of the file size, the number of lines to be checked and then the
+time consumed are always constant.
 
 #### Tab page individual
 This plugin works on each tab page individually. You can use a tab page
@@ -145,7 +145,3 @@ For a range and area selectable partial comparison, see
 ### Demo
 
 ![demo](demo.gif)
-
-### License
-
-MIT

@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2023/05/05
-" Version:     9.5 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change: 2023/07/12
+" Version:     9.6 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 " Copyright:   (c) 2014-2023 Rick Howe
 " License:     MIT
@@ -221,7 +221,9 @@ endfunction
 function! s:GetDiffUnitHL(dc) abort
   let hgp = [s:DCharHL.T]
   if type(a:dc) == type([])
-    let hgp += filter(copy(a:dc), '0 < hlID(v:val)')
+    let dc = filter(copy(a:dc),
+                  \'0 < hlID(v:val) && !empty(synIDattr(hlID(v:val), "bg#")')
+    if !empty(dc) | let hgp = dc | endif
   elseif 1 <= a:dc && a:dc <= 3
     let lv = a:dc - 1
     let bx = []
@@ -502,17 +504,25 @@ endfunction
 if s:VF.LuaVimDiff
 function! s:LuaVimDiff(u1, u2, ih) abort
   " Builtin diff function
-  let [u1, u2, eq, e1, e2] = [a:u1, a:u2, '=', '-', '+']
-  let [n1, n2] = [len(u1), len(u2)]
-  if u1 ==# u2 | return repeat(eq, n1)
+  let [eq, e1, e2] = ['=', '-', '+']
+  let [n1, n2] = [len(a:u1), len(a:u2)]
+  if a:u1 ==# a:u2 | return repeat(eq, n1)
   elseif n1 == 0 | return repeat(e2, n2)
   elseif n2 == 0 | return repeat(e1, n1)
   endif
-  let nx = n1 + n2
-  let ses = v:lua.vim.diff(join(u1, "\n") . "\n", join(u2, "\n") . "\n",
+  let es = ''
+  let vd = v:lua.vim.diff(join(a:u1, "\n") . "\n", join(a:u2, "\n") . "\n",
         \{'algorithm': 'minimal', 'indent_heuristic': a:ih ? v:true : v:false,
-                                        \'ctxlen': nx, 'interhunkctxlen': nx})
-  return tr(join(map(split(ses, "\n")[1:], 'v:val[0]'), ''), ' ', eq)
+                                                  \'result_type': 'indices'})
+  if !empty(vd)
+    let p1 = 1
+    for [s1, c1, s2, c2] in vd + [[n1, 0, 0, 0]]
+      if c1 == 0 | let s1 += 1 | endif
+      let es .= repeat(eq, s1 - p1) . repeat(e1, c1) . repeat(e2, c2)
+      let p1 = s1 + c1
+    endfor
+  endif
+  return es
 endfunction
 endif
 
@@ -641,14 +651,20 @@ function! s:ScrollDiffLines(...) abort
   for k in [1, 2]
     " check if a scroll happens in either window with no change on both
     let scl += (t:DChar.lcc[k].cn != lcc[k].cn) ? -1 :
-                                  \([t:DChar.lcc[k].tl, t:DChar.lcc[k].bl] !=
-                                              \[lcc[k].tl, lcc[k].bl]) ? 1 : 0
-    let [t:DChar.lcc[k].tl, t:DChar.lcc[k].bl] = [lcc[k].tl, lcc[k].bl]
+          \[t:DChar.lcc[k].tl, t:DChar.lcc[k].bl] != [lcc[k].tl, lcc[k].bl] &&
+                  \(empty(t:DChar.dfl[k]) || lcc[k].tl < t:DChar.dfl[k][0] ||
+                                      \t:DChar.dfl[k][-1] < lcc[k].bl) ? 1 : 0
+    let [t:DChar.lcc[k].tl, t:DChar.lcc[k].bl, t:DChar.lcc[k].cl] =
+                                            \[lcc[k].tl, lcc[k].bl, lcc[k].cl]
   endfor
   if 0 < scl
     let dfl = s:FocusDiffLines(0)
     if t:DChar.dfl != dfl
-      " show incremental DChar lines on dfl changes
+      " reset/show DChar lines on dfl changes
+      let ddl = filter(copy(t:DChar.dfl[ak]), 'index(dfl[ak], v:val) == -1')
+      if !empty(ddl)
+        call win_execute(t:DChar.wid[ak], 'call s:ResetDiffChar(ddl)')
+      endif
       let adl = filter(copy(dfl[ak]), 'index(t:DChar.dfl[ak], v:val) == -1')
       let t:DChar.dfl = dfl
       if !empty(adl)
@@ -672,150 +688,72 @@ function! s:FocusDiffLines(init) abort
       return t:DChar.dfl
     endif
   endif
-  let init = a:init || index(values(t:DChar.dfl), []) != -1
-  let tb = {}
-  " 1. get visible dfl in both wins and return existing dfl if no new dfl
-  for k in [1, 2]
-    let tb[k] = {'fl': 1, 'll': t:DChar.lcc[k].ll, 'tl': t:DChar.lcc[k].tl,
-            \'ti': -1, 'tc': -1, 'bl': t:DChar.lcc[k].bl, 'bi': -1, 'bc': -1}
-    call win_execute(t:DChar.wid[k], 'let dfl[k] =
-                                        \s:GetDiffLines(tb[k].tl, tb[k].bl)')
-  endfor
-  if !init
-    let nd = 0
-    for k in [1, 2]
-      if !empty(dfl[k])
-        let [tb[k].ti, tb[k].bi] = [index(t:DChar.dfl[k], dfl[k][0]),
-                                          \index(t:DChar.dfl[k], dfl[k][-1])]
-        let nd += (tb[k].ti != -1) && (tb[k].bi != -1) &&
-                              \(t:DChar.dfl[k][tb[k].ti : tb[k].bi] == dfl[k])
-      endif
-    endfor
-    if nd == 2 | return t:DChar.dfl | endif
-  endif
-  " 2. get upper/lower dfl, return empty if not found in both win or
-  " return all dfl found on init and set dfp=0 not to check scroll
-  let rx = 0
+  " select higher win as main
+  let [ak, bk] = (winheight(t:DChar.wid[1]) >= winheight(t:DChar.wid[2])) ?
+                                                              \[1, 2] : [2, 1]
+  " get visible and upper/lower dfl in main win
+  let [tl, bl] = [t:DChar.lcc[ak].tl, t:DChar.lcc[ak].bl]
+  call win_execute(t:DChar.wid[ak], 'let dfl[ak] = s:GetDiffLines(tl, bl)')
+  let [tl, bl] += [-1, 1]
   if 1 < t:DChar.dfp
-    for k in [1, 2]
-      let fl = (!init && tb[k].ti != -1) ? tb[k].tl : tb[k].fl
-      let ll = (!init && tb[k].bi != -1) ? tb[k].bl : tb[k].ll
-      let [tl, bl, tz, bz] = [tb[k].tl - 1, tb[k].bl + 1, [], []]
-      let rc = winheight(t:DChar.wid[k]) * (t:DChar.dfp - 1)
-      while 0 < rc
-        let fc = 0
-        if fl <= tl
-          call win_execute(t:DChar.wid[k], 'let fc = foldclosed(tl)')
-          if fc == -1 | let tz = [tl] + tz | else | let tl = fc | endif
-          let [tl, rc] = [tl - 1, rc - 1]
-        endif
-        if bl <= ll
-          call win_execute(t:DChar.wid[k], 'let fc = foldclosedend(bl)')
-          if fc == -1 | let bz += [bl] | else | let bl = fc | endif
-          let [bl, rc] = [bl + 1, rc - 1]
-        endif
-        if fc == 0 | let rx += 1 | break | endif
-      endwhile
-      call win_execute(t:DChar.wid[k], 'let dfl[k] =
-                      \s:CheckDiffLines(tz) + dfl[k] + s:CheckDiffLines(bz)')
-    endfor
+    let [tz, bz] = [[], []]
+    let rc = winheight(t:DChar.wid[ak]) * (t:DChar.dfp - 1)
+    while 0 < rc
+      let fc = 0
+      if 1 <= tl
+        call win_execute(t:DChar.wid[ak], 'let fc = foldclosed(tl)')
+        if fc == -1 | let tz = [tl] + tz | else | let tl = fc | endif
+        let tl -= 1 | let rc -= 1
+      endif
+      if bl <= t:DChar.lcc[ak].ll
+        call win_execute(t:DChar.wid[ak], 'let fc = foldclosedend(bl)')
+        if fc == -1 | let bz += [bl] | else | let bl = fc | endif
+        let bl += 1 | let rc -= 1
+      endif
+      if fc == 0 | break | endif
+    endwhile
+    call win_execute(t:DChar.wid[ak], 'let dfl[ak] =
+                      \s:CheckDiffLines(tz) + dfl[ak] + s:CheckDiffLines(bz)')
   endif
-  if empty(dfl[1]) && empty(dfl[2])
-    return init ? dfl : t:DChar.dfl
+  " if no dfl found in dfp, try to find one toward top/bottom
+  if empty(dfl[ak])
+    if !a:init | return t:DChar.dfl | endif
+    call win_execute(t:DChar.wid[ak], 'let dfl[ak] =
+                  \s:SearchDiffLines(0, tl, 1) + s:SearchDiffLines(1, bl, 1)')
+    if empty(dfl[ak]) | let dfl[bk] = [] | return dfl | endif
   endif
-  if init && 0 < rx && len(dfl[1]) == len(dfl[2])
-    let t:DChar.dfp = 0 | return dfl
-  endif
-  " 3. find how to relate between top/bottom lines of dfl
-  for k in [1, 2]
-    let [tb[k].ti, tb[k].bi, tb[k].tl, tb[k].bl] =
-                                                \[-1, -1, tb[k].fl, tb[k].ll]
-    if !empty(dfl[k])
-      if !init
-        if t:DChar.dfl[k][0] < dfl[k][0]
-          let tb[k].ti = index(t:DChar.dfl[k], dfl[k][0])
-          if tb[k].ti == -1
-            let tb[k].ti = (t:DChar.dfl[k][-1] < dfl[k][0]) ?
-                \len(t:DChar.dfl[k]) - 1 : filter(range(len(t:DChar.dfl[k])),
-                                    \'t:DChar.dfl[k][v:val] < dfl[k][0]')[-1]
-          endif
-          let tb[k].tl = t:DChar.dfl[k][tb[k].ti]
-        endif
-        if dfl[k][-1] < t:DChar.dfl[k][-1]
-          let tb[k].bi = index(t:DChar.dfl[k], dfl[k][-1])
-          if tb[k].bi == -1
-            let tb[k].bi = (dfl[k][-1] < t:DChar.dfl[k][0]) ?
-                                      \0 : filter(range(len(t:DChar.dfl[k])),
-                                    \'dfl[k][-1] < t:DChar.dfl[k][v:val]')[0]
-          endif
-          let tb[k].bl = t:DChar.dfl[k][tb[k].bi]
+  " get dfl in sub win based on the corresponding line between main/sub
+  let ds = {'t': [1, 1, 1, dfl[ak][0] - 1],
+          \'b': [0, t:DChar.lcc[bk].ll, dfl[ak][-1] + 1, t:DChar.lcc[ak].ll]}
+  let ix = -1
+  if !a:init && !empty(t:DChar.dfl[ak])
+    let ix = index(t:DChar.dfl[ak], dfl[ak][0])
+    if ix != -1
+      let [sd, sl, dc] = [1, t:DChar.dfl[bk][ix], 0]
+    else
+      let ix = index(t:DChar.dfl[ak], dfl[ak][-1])
+      if ix != -1
+        let [sd, sl, dc] = [0, t:DChar.dfl[bk][ix], 0]
+      else
+        if t:DChar.dfl[ak][-1] < dfl[ak][0]
+          let ds.t = [1, t:DChar.dfl[bk][-1], t:DChar.dfl[ak][-1],
+                                                              \dfl[ak][0] - 1]
+        elseif dfl[ak][-1] < t:DChar.dfl[ak][0]
+          let ds.b = [0, t:DChar.dfl[bk][0], dfl[ak][-1] + 1,
+                                                          \t:DChar.dfl[ak][0]]
         endif
       endif
-      let tb[k].tc = dfl[k][0] - tb[k].tl
-      let tb[k].bc = tb[k].bl - dfl[k][-1]
     endif
-  endfor
-  " 4. get and join opposite dfl using reference line and distance
-  let [tc, bc] = [tb[1].tc == tb[2].tc, tb[1].bc == tb[2].bc]
-  let [ti, bi] = [tb[1].ti == tb[2].ti, tb[1].bi == tb[2].bi]
-  if len(dfl[1]) != len(dfl[2]) || !(init ? tc || bc : ti && tc || bi && bc)
-    let dfz = {1: [], 2: []}
-    for [k1, k2] in [[1, 2], [2, 1]]
-      if !empty(dfl[k1])
-        if tb[k1].tc == 0
-          let [sd, dc] = [1, 0]
-        elseif tb[k1].bc == 0
-          let [sd, dc] = [0, 0]
-        else
-          let sd = tb[k1].tc < tb[k1].bc
-          call win_execute(t:DChar.wid[k1], 'let dc = len(sd ?
-                                \s:GetDiffLines(tb[k1].tl, dfl[k1][0] - 1) :
-                                \s:GetDiffLines(dfl[k1][-1] + 1, tb[k1].bl))')
-        endif
-        let ac = len(dfl[k1])
-        call win_execute(t:DChar.wid[k2], 'let dfz[k2] = sd ?
-                                    \s:SearchDiffLines(sd, (tb[k1].ti != -1) ?
-                \t:DChar.dfl[k2][tb[k1].ti] : tb[k2].fl, ac + dc)[-ac :] :
-                                    \s:SearchDiffLines(sd, (tb[k1].bi != -1) ?
-                \t:DChar.dfl[k2][tb[k1].bi] : tb[k2].ll, ac + dc)[: ac - 1]')
-      endif
-    endfor
-    for k in [1, 2]
-      if !empty(dfz[k])
-        if !empty(dfl[k])
-          let [tz, bz] = [[], []]
-          if dfz[k][0] < dfl[k][0]
-            let ti = index(dfz[k], dfl[k][0])
-            let tz = (ti != -1) ? dfz[k][: ti - 1] : dfz[k]
-          endif
-          if dfl[k][-1] < dfz[k][-1]
-            let bi = index(dfz[k], dfl[k][-1])
-            let bz = (bi != -1) ? dfz[k][bi + 1 :] : dfz[k]
-          endif
-          let dfl[k] = tz + dfl[k] + bz
-        else
-          let dfl[k] = dfz[k]
-        endif
-      endif
-    endfor
   endif
-  " 5. merge with existing dfl
-  if !init
-    for k in [1, 2]
-      let [tz, bz] = [[], []]
-      if t:DChar.dfl[k][0] < dfl[k][0]
-        let ti = index(t:DChar.dfl[k], dfl[k][0])
-        let tz = (ti != -1) ? t:DChar.dfl[k][: ti - 1] :
-                          \filter(copy(t:DChar.dfl[k]), 'v:val < dfl[k][0]')
-      endif
-      if dfl[k][-1] < t:DChar.dfl[k][-1]
-        let bi = index(t:DChar.dfl[k], dfl[k][-1])
-        let bz = (bi != -1) ? t:DChar.dfl[k][bi + 1 :] :
-                          \filter(copy(t:DChar.dfl[k]), 'dfl[k][-1] < v:val')
-      endif
-      let dfl[k] = tz + dfl[k] + bz
-    endfor
+  if ix == -1
+    let [sd, sl, df, dl] = (ds.t[3] - ds.t[2] <= ds.b[3] - ds.b[2]) ?
+                                                                  \ds.t : ds.b
+    call win_execute(t:DChar.wid[ak], 'let dc = len(s:GetDiffLines(df, dl))')
   endif
+  let ac = len(dfl[ak])
+  call win_execute(t:DChar.wid[bk], 'let dfl[bk] =
+                                        \s:SearchDiffLines(sd, sl, dc + ac)')
+  let dfl[bk] = sd ? dfl[bk][-ac :] : dfl[bk][: ac - 1]
   return dfl
 endfunction
 
