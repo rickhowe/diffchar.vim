@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2023/07/12
-" Version:     9.6 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change: 2023/07/16
+" Version:     9.61 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 " Copyright:   (c) 2014-2023 Rick Howe
 " License:     MIT
@@ -221,9 +221,9 @@ endfunction
 function! s:GetDiffUnitHL(dc) abort
   let hgp = [s:DCharHL.T]
   if type(a:dc) == type([])
-    let dc = filter(copy(a:dc),
-                  \'0 < hlID(v:val) && !empty(synIDattr(hlID(v:val), "bg#")')
-    if !empty(dc) | let hgp = dc | endif
+    let hgp += filter(copy(a:dc),
+                  \'0 < hlID(v:val) && !empty(synIDattr(hlID(v:val), "bg#"))')
+    if 1 < len(hgp) | unlet hgp[0] | endif
   elseif 1 <= a:dc && a:dc <= 3
     let lv = a:dc - 1
     let bx = []
