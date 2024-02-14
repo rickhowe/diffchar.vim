@@ -15,10 +15,10 @@ highlights all the text in between the first and last different characters on
 a changed line. But this plugin will find the exact differences between them,
 character by character - so called *DiffChar*.
 
-For example, in diff mode:  
+For example, in diff mode:
 ![example1](example1.png)
 
-This plugin will exactly show the changed and added units:  
+This plugin will exactly show the changed and added units:
 ![example2](example2.png)
 
 #### Sync with diff mode
@@ -29,7 +29,7 @@ will be kept updated while editing.
 #### Diff unit
 This plugin shows the diffs based on a `g:DiffUnit`. Its default is 'Word1'
 and it handles a `\w\+` word and a `\W` character as a diff unit. There are other
-types of word provided and you can also set 'Char' to compare character by 
+types of word provided and you can also set 'Char' to compare character by
 character. In addition, you can specify one or more diff unit delimiters, such
 as comma (','), colon (':'), tab ("\t"), and HTML tag symbols ('<' and '>'),
 and also specify a custom pattern in the `g:DiffUnit`.
@@ -80,16 +80,16 @@ highlighted units are to be reset in the tab page.
 #### Follow 'diffopt' option
 This plugin supports `icase`, `iwhite`, `iwhiteall`, and `iwhiteeol` in the
 `diffopt` option. In addition, when `indent-heuristic` is specified,
-positioning of the added/deleted diff units is adjusted to make them easier
-to read.
+positioning of the added/deleted diff units is adjusted to reduce the number
+of diff hunks and make them easier to read.
 
 #### Comparison algorithm
 To find the exact differences, this plugin uses "An O(NP) Sequence Comparison
 Algorithm" developed by S.Wu, et al., which always finds an optimum sequence.
 But it takes time to check a long and dissimilar line. To improve the
 performance, the algorithm is also implemented in Vim9 script. In addition,
-if available in nvim, this plugin uses a builtin Lua `vim.diff()` function and
-makes it much faster.
+if available, this plugin uses a builtin diff function (`diff()` in vim
+patch-9.1.0071 and Lua `vim.diff()` in nvim 0.6.0) and makes it much faster.
 
 #### See also
 For a range and area selectable partial comparison, see
@@ -122,7 +122,7 @@ For a range and area selectable partial comparison, see
   | [{hlg}] | a list of your favorite highlight groups |
 
 * `g:DiffPairVisible`, `t:DiffPairVisible`: Visibility of corresponding diff units
-  
+
   | Value | Description |
   | --- | --- |
   | 0 | disable |

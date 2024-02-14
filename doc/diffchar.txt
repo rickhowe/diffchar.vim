@@ -8,10 +8,10 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2023/07/16
-Version:     9.61 (on or after patch-8.1.1418 and nvim-0.5.0)
+Last Change: 2024/02/14
+Version:     9.7 (on or after patch-8.1.1418 and nvim-0.5.0)
 Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
-Copyright:   (c) 2014-2023 Rick Howe
+Copyright:   (c) 2014-2024 Rick Howe
 License:     MIT
 
 -----------------------------------------------------------------------------
@@ -103,16 +103,16 @@ highlighted units are to be reset in the tab page.
 Follow 'diffopt' option ~
 This plugin supports "icase", "iwhite", "iwhiteall", and "iwhiteeol" in the
 'diffopt' option. In addition, when "indent-heuristic" is specified,
-positioning of the added/deleted diff units is adjusted to make them easier
-to read.
+positioning of the added/deleted diff units is adjusted to reduce the number
+of diff hunks and make them easier to read.
 
 Comparison algorithm ~
 To find the exact differences, this plugin uses "An O(NP) Sequence Comparison
 Algorithm" developed by S.Wu, et al., which always finds an optimum sequence.
 But it takes time to check a long and dissimilar line. To improve the
 performance, the algorithm is also implemented in Vim9 script. In addition,
-if available in nvim, this plugin uses a builtin Lua |vim.diff()| function and
-makes it much faster.
+if available, this plugin uses a builtin diff function (|diff()| in vim
+patch-9.1.0071 and Lua |vim.diff()| in nvim 0.6.0) and makes it much faster.
 
 See also ~
 For a range and area selectable partial comparison, see |spotdiff.vim|
@@ -172,6 +172,10 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 9.7
+* Implemented to use a new builtin |diff()| function (available on
+  patch-9.1.0071) to compare diff units and make it faster in vim.
 
 Update : 9.6, 9.61
 * Changed to locally but not incrementally check the limited number of the
