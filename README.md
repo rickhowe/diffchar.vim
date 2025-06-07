@@ -92,8 +92,11 @@ if available, this plugin uses a builtin diff function (`diff()` in vim
 patch-9.1.0071 and Lua `vim.diff()` in nvim 0.6.0) and makes it much faster.
 
 #### See also
-For a range and area selectable partial comparison, see
-[spotdiff.vim](https://github.com/rickhowe/spotdiff.vim) plugin.
+There are other diff related plugins available:
+* [spotdiff.vim](https://github.com/rickhowe/spotdiff.vim): A range and area selectable `:diffthis` to compare partially
+* [wrapfiller](https://github.com/rickhowe/wrapfiller): Align each wrapped line virtually between windows
+* [difffilter](https://github.com/rickhowe/difffilter): Selectively compare lines as you want in diff mode
+* [diffunitsyntax](https://github.com/rickhowe/diffunitsyntax): Highlight word or character based diff units in diff format
 
 ### Options
 

@@ -8,10 +8,10 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2024/02/14
-Version:     9.7 (on or after patch-8.1.1418 and nvim-0.5.0)
+Last Change: 2025/06/07
+Version:     9.8 (on or after patch-8.1.1418 and nvim-0.5.0)
 Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
-Copyright:   (c) 2014-2024 Rick Howe
+Copyright:   (c) 2014-2025 Rick Howe
 License:     MIT
 
 -----------------------------------------------------------------------------
@@ -115,8 +115,15 @@ if available, this plugin uses a builtin diff function (|diff()| in vim
 patch-9.1.0071 and Lua |vim.diff()| in nvim 0.6.0) and makes it much faster.
 
 See also ~
-For a range and area selectable partial comparison, see |spotdiff.vim|
-(https://github.com/rickhowe/spotdiff.vim) plugin.
+There are other diff related plugins available:
+- |spotdiff.vim|: A range and area selectable `:diffthis` to compare partially
+  (https://github.com/rickhowe/spotdiff.vim)
+- |wrapfiller|: Align each wrapped line virtually between windows
+  (https://github.com/rickhowe/wrapfiller)
+- |difffilter|: Selectively compare lines as you want in diff mode
+  (https://github.com/rickhowe/difffilter)
+- |diffunitsyntax|: Highlight word or character based diff units in diff format
+  (https://github.com/rickhowe/diffunitsyntax)
 
 -----------------------------------------------------------------------------
 OPTIONS                                                *diffchar-options*
@@ -172,6 +179,17 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 9.8
+* Improved to follow "linematch", which is run to realign diff lines when
+  displayed on screen, if specified in the 'diffopt' option (default on nvim
+  0.11). Accordingly, fixed errors such as E684 and E716 on nvim.
+* Changed to disable this plugin to avoid a conflict with character/word-wise
+  "inline" diff (patch-9.1.1243), if specified in the 'diffopt' option.
+* Changed to overwrite nvim default mappings to set plugin specific ones on
+  plugin loading. As of nvim 0.11, `[b` and `]b` keys are duplicated.
+* Fixed to handle tab and space as a same whitespace character if "iwhite" or
+  "iwhiteall" are specified in the 'diffopt' options.
 
 Update : 9.7
 * Implemented to use a new builtin |diff()| function (available on

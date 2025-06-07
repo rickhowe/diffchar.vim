@@ -8,10 +8,10 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2024/02/14
-" Version:     9.7 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change: 2025/06/07
+" Version:     9.8 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
-" Copyright:   (c) 2014-2024 Rick Howe
+" Copyright:   (c) 2014-2025 Rick Howe
 " License:     MIT
 
 " This 9.x version requires:
@@ -27,7 +27,7 @@ if exists('g:loaded_diffchar') || !has('diff') || v:version < 800 ||
                                                       \!exists('*win_execute')
   finish
 endif
-let g:loaded_diffchar = 9.7
+let g:loaded_diffchar = 9.8
 
 let s:save_cpo = &cpoptions
 set cpo&vim
@@ -75,7 +75,7 @@ for [key, plg, cmd] in [
                                   \':<C-U>call diffchar#CopyDiffCharPair(0)'],
   \['<Leader>p', '<Plug>PutDiffCharPair',
                                   \':<C-U>call diffchar#CopyDiffCharPair(1)']]
-  if !hasmapto(plg, 'n') && empty(maparg(key, 'n'))
+  if !hasmapto(plg, 'n') && maparg(key, 'n') =~ '^$\|_defaults.lua'
     if get(g:, 'DiffCharDoMapping', 1)
       call execute('nmap <silent> ' . key . ' ' . plg)
     endif
