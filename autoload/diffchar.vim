@@ -8,8 +8,8 @@
 " |     || || |   | |   |  |__ |  _  ||  _  || |  | |
 " |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 "
-" Last Change: 2025/06/07
-" Version:     9.8 (on or after patch-8.1.1418 and nvim-0.5.0)
+" Last Change: 2025/06/25
+" Version:     9.9 (on or after patch-8.1.1418 and nvim-0.5.0)
 " Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 " Copyright:   (c) 2014-2025 Rick Howe
 " License:     MIT
@@ -20,7 +20,7 @@ set cpo&vim
 " Vim feature, function, event and patch number which this plugin depends on
 " patch-8.1.1832: win_execute() fixed to work in other tabpage
 " patch-8.2.4204: screenpos() fixed to return zero row for invisible line
-" patch-8.2,4713: WinScrolled added
+" patch-8.2.4713: WinScrolled added
 " patch-9.0.0620: matchaddpos() updated to allow more than 8 matches
 " patch-9.1.0099: diff() fixed to correctly use in &diffexpr
 let s:VF = #{
@@ -163,8 +163,8 @@ function! s:InitializeDiffChar() abort
   let t:DChar = {}
   let t:DChar.wid = #{1: cw, 2: nw[0]}
   let t:DChar.bnr = #{1: cb, 2: nb[0]}
-  let t:DChar.dfp = s:DiffCharOpt('DiffFocusPages')
   let t:DChar.opt = s:GetDiffCharOptions()
+  let t:DChar.dfp = s:DiffCharOpt('DiffFocusPages')
   let t:DChar.lcc = s:GetLineColCnr()
   let t:DChar.dfl = s:FocusDiffLines(0)
   let t:DChar.upa = s:GetDiffSplitRegExp(t:DChar.opt.ut)
@@ -375,21 +375,23 @@ function! s:GetDiffCharOptions() abort
           \iw: (index(do, 'iwhiteall') != -1) ? 1 :
                                       \(index(do, 'iwhite') != -1) ? 2 :
                                       \(index(do, 'iwhiteeol') != -1) ? 3 : 0,
-          \ih: index(do, 'indent-heuristic') != -1}
+          \ih: index(do, 'indent-heuristic') != -1,
+          \lm: match(do, 'linematch') != -1}
 endfunction
 
 function! s:DiffCharOpt(opt) abort
+  let ov = get(t:, a:opt, get(g:, a:opt,
+        \#{DiffChar: 1, DiffUnit: 'Word1', DiffColors: 0, DiffPairVisible: 1,
+                              \DiffFocusPages: 3, BuiltinDiffFunc: 1}[a:opt]))
   if a:opt == 'DiffChar'
     " avoid a conflict with inline char/word diff if enabled
     let il = filter(split(&diffopt, ','), 'v:val =~? "^inline:"')
-    if !empty(il) && il[-1] !~? '\(none\|simple\)$' | return 0 | endif
+    if !empty(il) && il[-1] !~? '\(none\|simple\)$' | let ov = 0 | endif
   elseif a:opt == 'DiffFocusPages'
-    " do not check off-screen lines on which linematch is not yet run
-    if &diffopt =~ 'linematch' | return 1 | endif
+    " avoid to check off-screen diff lines linematch is not yet run
+    if t:DChar.opt.lm | let ov = (0 < ov) ? 1 : (ov < 0) ? -1 : 0 | endif
   endif
-  return get(t:, a:opt, get(g:, a:opt,
-        \#{DiffChar: 1, DiffUnit: 'Word1', DiffColors: 0, DiffPairVisible: 1,
-                              \DiffFocusPages: 3, BuiltinDiffFunc: 1}[a:opt]))
+  return ov
 endfunction
 
 function! s:ToggleDiffHL(on) abort
@@ -405,7 +407,7 @@ function! s:RefreshDiffCharHL(event) abort
   let on = exists('t:DChar')
   call s:ToggleDiffHL(on)
   if on
-    " redraw DChar units with the latest colorschme
+    " redraw DChar units with the latest colorscheme
     let csn = s:GetColorsName()
     if t:DChar.csn != csn
       let t:DChar.csn = csn
@@ -430,9 +432,9 @@ function! s:ToggleDiffCharEvent(on) abort
       let bl = '<buffer=' . td.bnr[k] . '>'
       let ac += [[s:VF.WinClosed ? 'WinClosed' : 'BufWinLeave', bl,
                                                     \'s:WinClosedDiffChar()']]
-      if 0 < td.dfp
+      if td.dfp != 0
         let ac += [[s:VF.WinScrolled ? 'WinScrolled' : 'CursorMoved', bl,
-                                                      \'s:ScrollDiffLines()']]
+                                                    \'s:ScrollDiffLines(0)']]
       endif
       if 0 < td.dpv.pv
         let ac += [['CursorMoved', bl, 's:ShowDiffCharPair(' . k . ')']]
@@ -489,139 +491,6 @@ function! s:ShiftMatchaddLines(key, lid, shift) abort
                                             \#{window: t:DChar.wid[a:key]})')
   endfor
   return lid
-endfunction
-
-function! s:ScrollDiffLines(...) abort
-  " called on WinScrolled or CursorMoved or other
-  if !exists('t:DChar') | return | endif
-  if a:0 | let ak = a:1
-  else
-    let wid = s:VF.WinScrolled ? str2nr(expand('<amatch>')) : win_getid()
-    let ak = 2 | while t:DChar.wid[ak] != wid | let ak -= 1
-      if ak == 0 | return | endif
-    endwhile
-  endif
-  let lcc = s:GetLineColCnr()
-  let sk = 0
-  for k in [1, 2]
-    " check if a scroll happens in either window with no change on both
-    let sk += (t:DChar.lcc[k].cn != lcc[k].cn) ? -k * 10 :
-          \(lcc[k].tl < t:DChar.lcc[k].tl || t:DChar.lcc[k].bl < lcc[k].bl) &&
-                  \(empty(t:DChar.dfl[k]) || lcc[k].tl < t:DChar.dfl[k][0] ||
-                                      \t:DChar.dfl[k][-1] < lcc[k].bl) ? k : 0
-    let [t:DChar.lcc[k].tl, t:DChar.lcc[k].bl, t:DChar.lcc[k].cl] =
-                                            \[lcc[k].tl, lcc[k].bl, lcc[k].cl]
-  endfor
-  if 0 < sk
-    let dfl = s:FocusDiffLines(sk)
-    if t:DChar.dfl != dfl
-      " reset/show DChar lines on dfl changes
-      let bk = (ak == 1) ? 2 : 1
-      let dl = map(copy(t:DChar.dfl[ak]), '[v:val, t:DChar.dfl[bk][v:key]]')
-      let al = map(copy(dfl[ak]), '[v:val, dfl[bk][v:key]]')
-      for di in range(len(dl) - 1, 0, -1)
-        let ai = index(al, dl[di])
-        if ai != -1 | unlet dl[di] | unlet al[ai] | endif
-      endfor
-      if !empty(dl)
-        call map(dl, 'v:val[0]')
-        call win_execute(t:DChar.wid[ak], 'call s:ResetDiffChar(dl)')
-      endif
-      let t:DChar.dfl = dfl
-      if !empty(al)
-        call map(al, 'v:val[0]')
-        call win_execute(t:DChar.wid[ak], 'call s:ShowDiffChar(al)')
-      endif
-    endif
-  endif
-endfunction
-
-function! s:FocusDiffLines(key) abort
-  " a:key : initiate dfl (0), either (1/2) or both (3) key using existing dfl
-  let dfl = {}
-  if t:DChar.dfp <= 0
-    if a:key == 0
-      for k in [1, 2]
-        call win_execute(t:DChar.wid[k], 'let dfl[k] =
-                                      \s:GetDiffLines(1, t:DChar.lcc[k].ll)')
-      endfor
-      return dfl
-    else
-      return t:DChar.dfl
-    endif
-  endif
-  " select specified win or more line displaying win as main
-  let tb = (a:key == 1) ? [1, 0] : (a:key == 2) ? [0, 1] :
-                \map([1, 2], 't:DChar.lcc[v:val].bl - t:DChar.lcc[v:val].tl')
-  let [ak, bk] = (tb[0] >= tb[1]) ? [1, 2] : [2, 1]
-  " get visible and upper/lower dfl in main win
-  let [tl, bl] = [t:DChar.lcc[ak].tl, t:DChar.lcc[ak].bl]
-  call win_execute(t:DChar.wid[ak], 'let dfl[ak] = s:GetDiffLines(tl, bl)')
-  let [tl, bl] += [-1, 1]
-  if 1 < t:DChar.dfp
-    let [tz, bz] = [[], []]
-    let rc = winheight(t:DChar.wid[ak]) * (t:DChar.dfp - 1)
-    while 0 < rc
-      let fc = 0
-      if 1 <= tl
-        call win_execute(t:DChar.wid[ak], 'let fc = foldclosed(tl)')
-        if fc == -1 | let tz = [tl] + tz | else | let tl = fc | endif
-        let tl -= 1 | let rc -= 1
-      endif
-      if bl <= t:DChar.lcc[ak].ll
-        call win_execute(t:DChar.wid[ak], 'let fc = foldclosedend(bl)')
-        if fc == -1 | let bz += [bl] | else | let bl = fc | endif
-        let bl += 1 | let rc -= 1
-      endif
-      if fc == 0 | break | endif
-    endwhile
-    call win_execute(t:DChar.wid[ak], 'let dfl[ak] =
-                      \s:CheckDiffLines(tz) + dfl[ak] + s:CheckDiffLines(bz)')
-  endif
-  " if no dfl found in dfp, try to find one toward top/bottom
-  if empty(dfl[ak])
-    if 0 < a:key | return t:DChar.dfl | endif
-    call win_execute(t:DChar.wid[ak], 'let dfl[ak] =
-                  \s:SearchDiffLines(0, tl, 1) + s:SearchDiffLines(1, bl, 1)')
-    if empty(dfl[ak]) | let dfl[bk] = [] | return dfl | endif
-  endif
-  " get dfl in sub win based on the corresponding line between main/sub
-  let ds = #{t: [1, 1, 1, dfl[ak][0] - 1],
-            \b: [0, t:DChar.lcc[bk].ll, dfl[ak][-1] + 1, t:DChar.lcc[ak].ll]}
-  let ix = -1
-  if 0 < a:key && !empty(t:DChar.dfl[ak])
-    let ix = index(t:DChar.dfl[ak], dfl[ak][0])
-    if ix != -1
-      let [sd, sl, dc] = [1, t:DChar.dfl[bk][ix], 0]
-    else
-      let ix = index(t:DChar.dfl[ak], dfl[ak][-1])
-      if ix != -1
-        let [sd, sl, dc] = [0, t:DChar.dfl[bk][ix], 0]
-      else
-        if t:DChar.dfl[ak][-1] < dfl[ak][0]
-          let ds.t = [1, t:DChar.dfl[bk][-1], t:DChar.dfl[ak][-1],
-                                                              \dfl[ak][0] - 1]
-        elseif dfl[ak][-1] < t:DChar.dfl[ak][0]
-          let ds.b = [0, t:DChar.dfl[bk][0], dfl[ak][-1] + 1,
-                                                          \t:DChar.dfl[ak][0]]
-        endif
-      endif
-    endif
-  endif
-  if ix == -1
-    let [sd, sl, df, dl] = (ds.t[3] - ds.t[2] <= ds.b[3] - ds.b[2]) ?
-                                                                  \ds.t : ds.b
-    call win_execute(t:DChar.wid[ak], 'let dc = len(s:GetDiffLines(df, dl))')
-  endif
-  let ac = len(dfl[ak])
-  call win_execute(t:DChar.wid[bk], 'let dfl[bk] =
-                                        \s:SearchDiffLines(sd, sl, dc + ac)')
-  let bc = len(dfl[bk])
-  if ac != bc
-    let [xk, xc] = (ac < bc) ? [bk, ac] : [ak, bc]
-    let dfl[xk] = (xc == 0) ? [] : sd ? dfl[xk][-xc :] : dfl[xk][: xc - 1]
-  endif
-  return dfl
 endfunction
 
 function! s:GetLineColCnr() abort
@@ -740,15 +609,18 @@ function! diffchar#JumpDiffChar(dir, pos) abort
   else
     let dl = s:SearchDiffLines(a:dir, a:dir ? ln + 1 : ln - 1, 1)
     if empty(dl) | return | endif
-    let lp = ln | let ln = dl[0] | let lx = ln
+    if t:DChar.opt.lm | let lp = ln | endif
+    let ln = dl[0] | let lx = ln
     while 1
       " go up/down and check on-screen diff lines, linematch can realign
       if a:dir ? t:DChar.lcc[k].ll < lx : lx < 1 | return | endif
       noautocmd call cursor(lx, 0) | call s:ScrollDiffLines(k)
       if has_key(t:DChar.hlc[k], ln) | break | endif
-      let dl = filter(sort(map(keys(t:DChar.hlc[k]), 'str2nr(v:val)'), 'n'),
+      if t:DChar.opt.lm
+        let dl = filter(sort(map(keys(t:DChar.hlc[k]), 'str2nr(v:val)'), 'n'),
                                         \a:dir ? 'lp < v:val' : 'lp > v:val')
-      if !empty(dl) | let ln = a:dir ? dl[0] : dl[-1] | break | endif
+        if !empty(dl) | let ln = a:dir ? dl[0] : dl[-1] | break | endif
+      endif
       let lx = a:dir ? max([lx, t:DChar.lcc[k].bl]) + 1 :
                                             \min([lx, t:DChar.lcc[k].tl]) - 1
     endwhile
@@ -864,7 +736,7 @@ function! s:ShowDiffCharPair(key) abort
       let hu = filter(map(copy(t:DChar.hlc[a:key][cl]), '[v:key, v:val[1]]'),
                                     \'v:val[1][0] <= cc && cc <= v:val[1][1]')
       if !empty(hu)
-        " for 2 contineous 'd', check if cursor moved forward/backward
+        " for 2 continuous 'd', check if cursor moved forward/backward
         let ix = (len(hu) == 1) ? 0 : (cl == pl) ? cc < pc : cl < pl
         call s:HighlightDiffCharPair(a:key, cl, hu[ix][0])
       endif
@@ -1187,6 +1059,207 @@ function! s:HighlightDiffChar(lec) abort
   endfor
 endfunction
 
+function! s:ScrollDiffLines(key) abort
+  " called on WinScrolled or CursorMoved or other
+  if !exists('t:DChar') | return | endif
+  if 0 < a:key | let ak = a:key
+  else
+    let wid = s:VF.WinScrolled ? str2nr(expand('<amatch>')) : win_getid()
+    let ak = 2 | while t:DChar.wid[ak] != wid | let ak -= 1
+      if ak == 0 | return | endif
+    endwhile
+  endif
+  let lcc = s:GetLineColCnr()
+  let sk = 0
+  for k in [1, 2]
+    " check if a scroll happens in either window with no change on both
+    let sk += (t:DChar.lcc[k].cn != lcc[k].cn) ? -k * 10 :
+          \(lcc[k].tl < t:DChar.lcc[k].tl || t:DChar.lcc[k].bl < lcc[k].bl) &&
+                  \(empty(t:DChar.dfl[k]) || lcc[k].tl < t:DChar.dfl[k][0] ||
+                                      \t:DChar.dfl[k][-1] < lcc[k].bl) ? k : 0
+    let [t:DChar.lcc[k].tl, t:DChar.lcc[k].bl, t:DChar.lcc[k].cl] =
+                                            \[lcc[k].tl, lcc[k].bl, lcc[k].cl]
+  endfor
+  if 0 < sk
+    let dfl = s:FocusDiffLines(sk)
+    if t:DChar.dfl != dfl
+      " reset/show DChar lines on dfl changes
+      let [dl, al] = [t:DChar.dfl[ak], dfl[ak]]
+      let ix = map([0, -1], 'index(t:DChar.dfl[ak], dfl[ak][v:val])')
+      if ix != [-1, -1]
+        let [dl, al] = [[], []]
+        if ix[0] != -1
+          let dl += (0 < ix[0]) ? t:DChar.dfl[ak][: ix[0] - 1] : []
+        else
+          let al = dfl[ak][: index(dfl[ak], t:DChar.dfl[ak][0]) - 1]
+        endif
+        if ix[1] != -1
+          let dl += (ix[1] < len(t:DChar.dfl[ak])) ?
+                                            \t:DChar.dfl[ak][ix[1] + 1 :] : []
+        else
+          let al = dfl[ak][index(dfl[ak], t:DChar.dfl[ak][-1]) + 1 :]
+        endif
+      endif
+      if !empty(dl)
+        call win_execute(t:DChar.wid[ak], 'call s:ResetDiffChar(dl)')
+      endif
+      let t:DChar.dfl = dfl
+      if !empty(al)
+        call win_execute(t:DChar.wid[ak], 'call s:ShowDiffChar(al)')
+      endif
+    endif
+  endif
+endfunction
+
+function! s:FocusDiffLines(key) abort
+  " a:key : initiate dfl (0), either (1/2) or both (3) key using existing dfl
+  let dfl = {}
+  if t:DChar.dfp == 0
+    if a:key == 0
+      for k in [1, 2]
+        call win_execute(t:DChar.wid[k], 'let dfl[k] =
+                                      \s:GetDiffLines(1, t:DChar.lcc[k].ll)')
+      endfor
+      return dfl
+    else
+      return t:DChar.dfl
+    endif
+  endif
+  " select specified win or more line displaying win as main
+  let tb = (a:key == 1) ? [1, 0] : (a:key == 2) ? [0, 1] :
+                \map([1, 2], 't:DChar.lcc[v:val].bl - t:DChar.lcc[v:val].tl')
+  let [ak, bk] = (tb[0] >= tb[1]) ? [1, 2] : [2, 1]
+  " get visible and upper/lower dfl in main win
+  let [tl, bl] = [t:DChar.lcc[ak].tl, t:DChar.lcc[ak].bl]
+  call win_execute(t:DChar.wid[ak], 'let dfl[ak] = s:GetDiffLines(tl, bl)')
+  let [tx, bx] = [1, t:DChar.lcc[ak].ll]
+  if 0 < t:DChar.dfp && 0 < a:key && !empty(t:DChar.dfl[ak])
+    if tl > t:DChar.dfl[ak][0] | let tx = t:DChar.dfl[ak][-1] | endif
+    if bl < t:DChar.dfl[ak][-1] | let bx = t:DChar.dfl[ak][0] | endif
+  endif
+  let [tl, bl] += [-1, 1]
+  if 1 < abs(t:DChar.dfp)
+    let [tz, bz] = [[], []]
+    let rc = winheight(t:DChar.wid[ak]) * (abs(t:DChar.dfp) - 1)
+    while 0 < rc
+      let fc = 0
+      if tx <= tl
+        call win_execute(t:DChar.wid[ak], 'let fc = foldclosed(tl)')
+        if fc == -1 | let tz = [tl] + tz | else | let tl = fc | endif
+        let tl -= 1 | let rc -= 1
+      endif
+      if bl <= bx
+        call win_execute(t:DChar.wid[ak], 'let fc = foldclosedend(bl)')
+        if fc == -1 | let bz += [bl] | else | let bl = fc | endif
+        let bl += 1 | let rc -= 1
+      endif
+      if fc == 0 | break | endif
+    endwhile
+    call win_execute(t:DChar.wid[ak], 'let dfl[ak] =
+                      \s:CheckDiffLines(tz) + dfl[ak] + s:CheckDiffLines(bz)')
+  endif
+  " if no dfl found in dfp, try to find one toward top/bottom
+  if empty(dfl[ak])
+    if 0 < a:key | return t:DChar.dfl | endif
+    call win_execute(t:DChar.wid[ak], 'let dfl[ak] =
+                  \s:SearchDiffLines(0, tl, 1) + s:SearchDiffLines(1, bl, 1)')
+    if empty(dfl[ak]) | let dfl[bk] = [] | return dfl | endif
+  endif
+  " get dfl in sub win based on the corresponding line between main/sub
+  let ds = #{t: [1, 1, 1, dfl[ak][0] - 1],
+            \b: [0, t:DChar.lcc[bk].ll, dfl[ak][-1] + 1, t:DChar.lcc[ak].ll]}
+  let ix = -1
+  if 0 < a:key && !empty(t:DChar.dfl[ak])
+    let ix = index(t:DChar.dfl[ak], dfl[ak][0])
+    if ix != -1
+      let [sd, sl, dc] = [1, t:DChar.dfl[bk][ix], 0]
+    else
+      let ix = index(t:DChar.dfl[ak], dfl[ak][-1])
+      if ix != -1
+        let [sd, sl, dc] = [0, t:DChar.dfl[bk][ix], 0]
+      else
+        if t:DChar.dfl[ak][-1] < dfl[ak][0]
+          let ds.t = [1, t:DChar.dfl[bk][-1], t:DChar.dfl[ak][-1],
+                                                              \dfl[ak][0] - 1]
+        elseif dfl[ak][-1] < t:DChar.dfl[ak][0]
+          let ds.b = [0, t:DChar.dfl[bk][0], dfl[ak][-1] + 1,
+                                                          \t:DChar.dfl[ak][0]]
+        endif
+      endif
+    endif
+  endif
+  if ix == -1
+    let [sd, sl, df, dl] = (ds.t[3] - ds.t[2] <= ds.b[3] - ds.b[2]) ?
+                                                                  \ds.t : ds.b
+    call win_execute(t:DChar.wid[ak], 'let dc = len(s:GetDiffLines(df, dl))')
+  endif
+  let ac = len(dfl[ak])
+  call win_execute(t:DChar.wid[bk], 'let dfl[bk] =
+                                        \s:SearchDiffLines(sd, sl, dc + ac)')
+  let bc = len(dfl[bk])
+  if ac != bc
+    let [xk, xc] = (ac < bc) ? [bk, ac] : [ak, bc]
+    let dfl[xk] = (xc == 0) ? [] : sd ? dfl[xk][-xc :] : dfl[xk][: xc - 1]
+  endif
+  " repair current dfl and merge with new dfl
+  if 0 < a:key && !empty(t:DChar.dfl[ak]) && t:DChar.dfl != dfl
+    " repair and redraw current on-screen dfl realigned by linematch
+    if t:DChar.opt.lm
+      let dxl = deepcopy(t:DChar.dfl)
+      let dfi = {}
+      for k in [1, 2]
+        let dfi[k] = map(copy(dfl[k]), 'index(dxl[k], v:val)')
+      endfor
+      let [dl, al] = [[], []]
+      if dfi[1] != dfi[2]
+        for fi in range(len(dfi[ak]))
+          let [i1, i2] = [dfi[1][fi], dfi[2][fi]]
+          let [ki, xi] = (i1 == -1 && i2 != -1) ? [1, i2] :
+                                  \(i1 != -1 && i2 == -1) ? [2, i1] : [0, -1]
+          if ki != 0
+            let [dl, al] += [[dxl[ak][xi]], [dfl[ak][fi]]]
+            let dxl[ki][xi] = dfl[ki][fi]
+          endif
+        endfor
+      endif
+      if !empty(dl)
+        call win_execute(t:DChar.wid[ak], 'call s:ResetDiffChar(dl)')
+      endif
+      let t:DChar.dfl = dxl
+      if !empty(al)
+        call win_execute(t:DChar.wid[ak], 'call s:ShowDiffChar(al)')
+      endif
+    endif
+    " merge current and new dfls if overlapped or continued
+    if 0 < t:DChar.dfp
+      let mx = 0
+      if t:DChar.dfl[ak][0] <= dfl[ak][0]
+        if t:DChar.dfl[ak][-1] >= dfl[ak][0] | let mx = 1
+        else
+          call win_execute(t:DChar.wid[ak], 'let nl =
+                    \s:GetDiffLines(t:DChar.dfl[ak][-1] + 1, dfl[ak][0] - 1)')
+          if empty(nl) | let mx = 2 | endif
+        endif
+      elseif dfl[ak][-1] <= t:DChar.dfl[ak][-1]
+        if dfl[ak][-1] >= t:DChar.dfl[ak][0] | let mx = -1
+        else
+          call win_execute(t:DChar.wid[ak], 'let nl =
+                    \s:GetDiffLines(dfl[ak][-1] + 1, t:DChar.dfl[ak][0] - 1)')
+          if empty(nl) | let mx = -2 | endif
+        endif
+      endif
+      if mx != 0
+        for k in [1, 2]
+          let dfl[k] = (0 < mx) ?
+              \t:DChar.dfl[k] + filter(dfl[k], 'v:val > t:DChar.dfl[k][-1]') :
+              \filter(dfl[k], 'v:val < t:DChar.dfl[k][0]') + t:DChar.dfl[k]
+        endfor
+      endif
+    endif
+  endif
+  return dfl
+endfunction
+
 function! s:SearchDiffLines(sd, sl, sc) abort
   " a:sd = direction (1:down, 0:up), a:sl = start line, a:sc = count
   let dl = [] | let [ln, sc] = [a:sl, a:sc]
@@ -1385,6 +1458,206 @@ def! s:HighlightDiffChar(lec: dict<any>)
   endfor
 enddef
 
+def! s:ScrollDiffLines(key: number)
+  # called on WinScrolled or CursorMoved or other
+  if !exists('t:DChar') | return | endif
+  var ak: number
+  if 0 < key | ak = key
+  else
+    const wid = s:VF.WinScrolled ? str2nr(expand('<amatch>')) : win_getid()
+    ak = 2 | while t:DChar.wid[ak] != wid | ak -= 1
+      if ak == 0 | return | endif
+    endwhile
+  endif
+  const lcc = s:GetLineColCnr()
+  var sk = 0
+  for k in [1, 2]
+    # check if a scroll happens in either window with no change on both
+    sk += (t:DChar.lcc[k].cn != lcc[k].cn) ? -k * 10 :
+          (lcc[k].tl < t:DChar.lcc[k].tl || t:DChar.lcc[k].bl < lcc[k].bl) &&
+                    (empty(t:DChar.dfl[k]) || lcc[k].tl < t:DChar.dfl[k][0] ||
+                                      t:DChar.dfl[k][-1] < lcc[k].bl) ? k : 0
+    [t:DChar.lcc[k].tl, t:DChar.lcc[k].bl, t:DChar.lcc[k].cl] =
+                                            [lcc[k].tl, lcc[k].bl, lcc[k].cl]
+  endfor
+  if 0 < sk
+    const dfl = s:FocusDiffLines(sk)
+    if t:DChar.dfl != dfl
+      # reset/show DChar lines on dfl changes
+      var [dl, al] = [t:DChar.dfl[ak], dfl[ak]]
+      const ix = map([0, -1], (_, v) => index(t:DChar.dfl[ak], dfl[ak][v]))
+      if ix != [-1, -1]
+        [dl, al] = [[], []]
+        if ix[0] != -1
+          dl += (0 < ix[0]) ? t:DChar.dfl[ak][: ix[0] - 1] : []
+        else
+          al = dfl[ak][: index(dfl[ak], t:DChar.dfl[ak][0]) - 1]
+        endif
+        if ix[1] != -1
+          dl += (ix[1] < len(t:DChar.dfl[ak])) ?
+                                            t:DChar.dfl[ak][ix[1] + 1 :] : []
+        else
+          al = dfl[ak][index(dfl[ak], t:DChar.dfl[ak][-1]) + 1 :]
+        endif
+      endif
+      if !empty(dl)
+        s:WinExec(t:DChar.wid[ak], 's:ResetDiffChar', [dl])
+      endif
+      t:DChar.dfl = dfl
+      if !empty(al)
+        s:WinExec(t:DChar.wid[ak], 's:ShowDiffChar', [al])
+      endif
+    endif
+  endif
+enddef
+
+def! s:FocusDiffLines(key: number): dict<any>
+  # a:key : initiate dfl (0), either (1/2) or both (3) key using existing dfl
+  var dfl = {}
+  if t:DChar.dfp == 0
+    if key == 0
+      for k in [1, 2]
+        dfl[k] = s:WinExec(t:DChar.wid[k], 's:GetDiffLines',
+                                                      [1, t:DChar.lcc[k].ll])
+      endfor
+      return dfl
+    else
+      return t:DChar.dfl
+    endif
+  endif
+  # select specified win or more line displaying win as main
+  const tb = (key == 1) ? [1, 0] : (key == 2) ? [0, 1] :
+                  map([1, 2], (_, v) => t:DChar.lcc[v].bl - t:DChar.lcc[v].tl)
+  const [ak, bk] = (tb[0] >= tb[1]) ? [1, 2] : [2, 1]
+  # get visible and upper/lower dfl in main win
+  var [tl, bl] = [t:DChar.lcc[ak].tl, t:DChar.lcc[ak].bl]
+  dfl[ak] = s:WinExec(t:DChar.wid[ak], 's:GetDiffLines', [tl, bl])
+  var [tx, bx] = [1, t:DChar.lcc[ak].ll]
+  if 0 < t:DChar.dfp && 0 < key && !empty(t:DChar.dfl[ak])
+    if tl > t:DChar.dfl[ak][0] | tx = t:DChar.dfl[ak][-1] | endif
+    if bl < t:DChar.dfl[ak][-1] | bx = t:DChar.dfl[ak][0] | endif
+  endif
+  [tl, bl] += [-1, 1]
+  if 1 < abs(t:DChar.dfp)
+    var [tz, bz] = [[], []]
+    var rc = winheight(t:DChar.wid[ak]) * (abs(t:DChar.dfp) - 1)
+    while 0 < rc
+      var fc = 0
+      if tx <= tl
+        fc = s:WinExec(t:DChar.wid[ak], 'foldclosed', [tl])
+        if fc == -1 | tz = [tl] + tz | else | tl = fc | endif
+        tl -= 1 | rc -= 1
+      endif
+      if bl <= bx
+        fc = s:WinExec(t:DChar.wid[ak], 'foldclosedend', [bl])
+        if fc == -1 | bz += [bl] | else | bl = fc | endif
+        bl += 1 | rc -= 1
+      endif
+      if fc == 0 | break | endif
+    endwhile
+    dfl[ak] = s:WinExec(t:DChar.wid[ak], 's:CheckDiffLines', [tz]) +
+                dfl[ak] + s:WinExec(t:DChar.wid[ak], 's:CheckDiffLines', [bz])
+  endif
+  # if no dfl found in dfp, try to find one toward top/bottom
+  if empty(dfl[ak])
+    if 0 < key | return t:DChar.dfl | endif
+    dfl[ak] = s:WinExec(t:DChar.wid[ak], 's:SearchDiffLines', [0, tl, 1]) +
+                  s:WinExec(t:DChar.wid[ak], 's:SearchDiffLines', [1, bl, 1])
+    if empty(dfl[ak]) | dfl[bk] = [] | return dfl | endif
+  endif
+  # get dfl in sub win based on the corresponding line between main/sub
+  var [sd, sl, dc, fl, ll] = [0, 0, 0, 0, 0]
+  var ds = {'t': [1, 1, 1, dfl[ak][0] - 1],
+            'b': [0, t:DChar.lcc[bk].ll, dfl[ak][-1] + 1, t:DChar.lcc[ak].ll]}
+  var ix = -1
+  if 0 < key && !empty(t:DChar.dfl[ak])
+    ix = index(t:DChar.dfl[ak], dfl[ak][0])
+    if ix != -1
+      [sd, sl, dc] = [1, t:DChar.dfl[bk][ix], 0]
+    else
+      ix = index(t:DChar.dfl[ak], dfl[ak][-1])
+      if ix != -1
+        [sd, sl, dc] = [0, t:DChar.dfl[bk][ix], 0]
+      else
+        if t:DChar.dfl[ak][-1] < dfl[ak][0]
+          ds.t = [1, t:DChar.dfl[bk][-1], t:DChar.dfl[ak][-1], dfl[ak][0] - 1]
+        elseif dfl[ak][-1] < t:DChar.dfl[ak][0]
+          ds.b = [0, t:DChar.dfl[bk][0], dfl[ak][-1] + 1, t:DChar.dfl[ak][0]]
+        endif
+      endif
+    endif
+  endif
+  if ix == -1
+    [sd, sl, fl, ll] = (ds.t[3] - ds.t[2] <= ds.b[3] - ds.b[2]) ? ds.t : ds.b
+    dc = len(s:WinExec(t:DChar.wid[ak], 's:GetDiffLines', [fl, ll]))
+  endif
+  const ac = len(dfl[ak])
+  dfl[bk] = s:WinExec(t:DChar.wid[bk], 's:SearchDiffLines', [sd, sl, dc + ac])
+  const bc = len(dfl[bk])
+  if ac != bc
+    var [xk, xc] = (ac < bc) ? [bk, ac] : [ak, bc]
+    dfl[xk] = (xc == 0) ? [] : sd ? dfl[xk][-xc :] : dfl[xk][: xc - 1]
+  endif
+  # repair current dfl and merge with new dfl
+  if 0 < key && !empty(t:DChar.dfl[ak]) && t:DChar.dfl != dfl
+    # repair and redraw current on-screen dfl realigned by linematch
+    if t:DChar.opt.lm
+      var dxl = deepcopy(t:DChar.dfl)
+      var dfi = {}
+      for k in [1, 2]
+        dfi[k] = map(copy(dfl[k]), (_, v) => index(dxl[k], v))
+      endfor
+      var [dl, al] = [[], []]
+      if dfi[1] != dfi[2]
+        for fi in range(len(dfi[ak]))
+          const [i1, i2] = [dfi[1][fi], dfi[2][fi]]
+          const [ki, xi] = (i1 == -1 && i2 != -1) ? [1, i2] :
+                                  (i1 != -1 && i2 == -1) ? [2, i1] : [0, -1]
+          if ki != 0
+            [dl, al] += [[dxl[ak][xi]], [dfl[ak][fi]]]
+            dxl[ki][xi] = dfl[ki][fi]
+          endif
+        endfor
+      endif
+      if !empty(dl)
+        s:WinExec(t:DChar.wid[ak], 's:ResetDiffChar', [dl])
+      endif
+      t:DChar.dfl = dxl
+      if !empty(al)
+        s:WinExec(t:DChar.wid[ak], 's:ShowDiffChar', [al])
+      endif
+    endif
+    # merge current and new dfls if overlapped or continued
+    if 0 < t:DChar.dfp
+      var nl: list<number>
+      var mx = 0
+      if t:DChar.dfl[ak][0] <= dfl[ak][0]
+        if t:DChar.dfl[ak][-1] >= dfl[ak][0] | mx = 1
+        else
+          nl = s:WinExec(t:DChar.wid[ak], 's:GetDiffLines',
+                                    [t:DChar.dfl[ak][-1] + 1, dfl[ak][0] - 1])
+          if empty(nl) | mx = 2 | endif
+        endif
+      elseif dfl[ak][-1] <= t:DChar.dfl[ak][-1]
+        if dfl[ak][-1] >= t:DChar.dfl[ak][0] | mx = -1
+        else
+          nl = s:WinExec(t:DChar.wid[ak], 's:GetDiffLines',
+                                    [dfl[ak][-1] + 1, t:DChar.dfl[ak][0] - 1])
+          if empty(nl) | mx = -2 | endif
+        endif
+      endif
+      if mx != 0
+        for k in [1, 2]
+          dfl[k] = (0 < mx) ?
+            t:DChar.dfl[k] + filter(dfl[k], (_, v) => v > t:DChar.dfl[k][-1]) :
+            filter(dfl[k], (_, v) => v < t:DChar.dfl[k][0]) + t:DChar.dfl[k]
+        endfor
+      endif
+    endif
+  endif
+  return dfl
+enddef
+
 def! s:SearchDiffLines(sd: number, sl: number, sc: number): list<number>
   # a:sd = direction (1:down, 0:up), a:sl = start line, a:sc = count
   var dl = [] | var ln = sl | var sn = sc
@@ -1430,6 +1703,12 @@ enddef
 
 def! s:ChecksumStr(str: string): string
   return sha256(str)[: 5]
+enddef
+
+def! s:WinExec(wn: number, fn: string, ag: list<any>): any
+  win_execute(wn,
+          $'vim9cmd t:DChar.tmp = call({string(function(fn))}, {string(ag)})')
+  return t:DChar.tmp
 enddef
 endfunction
 call s:DefVim9DiffChar()

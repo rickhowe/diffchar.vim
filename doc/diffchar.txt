@@ -8,8 +8,8 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2025/06/07
-Version:     9.8 (on or after patch-8.1.1418 and nvim-0.5.0)
+Last Change: 2025/06/25
+Version:     9.9 (on or after patch-8.1.1418 and nvim-0.5.0)
 Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
 Copyright:   (c) 2014-2025 Rick Howe
 License:     MIT
@@ -179,6 +179,11 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+Update : 9.9
+* Improved to remain previous diff lines highlighted upon scrolling if
+  possible and not to check them later again.
+* Implemented a few more functions in Vim9 script to make them faster.
 
 Update : 9.8
 * Improved to follow "linematch", which is run to realign diff lines when
