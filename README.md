@@ -18,13 +18,16 @@ character by character - so called *DiffChar*.
 For example, in diff mode:
 ![example1](example1.png)
 
-This plugin will exactly show the changed and added units:
+This plugin will exactly show the changed/added/deleted units:
 ![example2](example2.png)
 
 #### Sync with diff mode
 This plugin will synchronously show/reset the highlights of the exact
 differences as soon as the diff mode begins/ends. And the exact differences
-will be kept updated while editing.
+will be kept updated while editing. Note that this plugin does nothing if an
+`inline` item is set in the `doffopt` option and its value is other than
+`simple`. On plugin loading, the item is removed only if set by default so
+that this plugin can work.
 
 #### Diff unit
 This plugin shows the diffs based on a `g:DiffUnit`. Its default is 'Word1'
@@ -39,9 +42,10 @@ In diff mode, the corresponding `hl-DiffChange` lines are compared between two
 windows. As a default, all the changed units are highlighted with
 `hl-DiffText`. You can set `g:DiffColors` to use more than one matching color
 to make it easy to find the corresponding units between two windows. The
-number of colors depends on the color scheme. In addition, `hl-DiffAdd` is
-always used for the added units and both the previous and next character of
-the deleted units are shown in bold/underline.
+number of colors depends on the color scheme. In addition, an added unit is
+always highlighted with `hl-DiffAdd` and the position of the corresponding
+deleted unit is shown with bold/underline or a virtual blank column,
+depending on a `g:DiffDelPosVisible`.
 
 #### Diff pair visible
 While showing the exact differences, when the cursor is moved on a diff unit,
@@ -107,7 +111,7 @@ There are other diff related plugins available:
   | 'Char' | any single character |
   | 'Word1' | `\w\+` word and any `\W` single character (default) |
   | 'Word2' | non-space and space words |
-  | 'Word3' | `\<` or `\>` character class boundaries (set by `iskeyword` option) |
+  | 'Word3' | `\<` or `\>` character class boundaries (set by `iskeyword`) |
   | 'word' | see `word` |
   | 'WORD' | see `WORD` |
   | '[{del}]' | one or more diff unit delimiters (e.g. "[,:\t<>]") |
@@ -134,6 +138,14 @@ There are other diff related plugins available:
   | 3 | highlight with `hl-Cursor` + popup/floating window at cursor position |
   | 4 | highlight with `hl-Cursor` + popup/floating window at mouse position |
 
+* `g:DiffDelPosVisible`, `t:DiffDelPosVisible`: Visibility of the position of deleted units
+
+  | Value | Description |
+  | --- | --- |
+  | 0 | disable |
+  | 1 | highlight previous/next chars of a deleted unit in bold/underline (default if inline "virtual-text" is not available) |
+  | 2 | virtually show a blank column (set by `space` item in `listchars`) wih `hl-DiffDelete` (default if inline "virtual-text" is available) |
+
 ### Keymaps
 
 | Mapping | Default Key | Description |
@@ -144,7 +156,3 @@ There are other diff related plugins available:
 | `<Plug>JumpDiffCharNextEnd` | `]e` | Jump cursor to the end position of the next diff unit |
 | `<Plug>GetDiffCharPair` | `<Leader>g` | Get a corresponding diff unit from another buffer to undo difference |
 | `<Plug>PutDiffCharPair` | `<Leader>p` | Put a corresponding diff unit to another buffer to undo difference |
-
-### Demo
-
-![demo](demo.gif)
