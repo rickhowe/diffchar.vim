@@ -8,10 +8,10 @@
  |     || || |   | |   |  |__ |  _  ||  _  || |  | |
  |____| |_||_|   |_|   |_____||_| |_||_| |_||_|  |_|
 <
-Last Change: 2025/10/01
-Version:     10.0 (on or after vim 9.0 and nvim 0.7.0)
+Last Change: 2026/10/25
+Version:     10.1 (on or after vim 9.0 and nvim 0.7.0)
 Author:      Rick Howe (Takumi Ohtani) <rdcxy754@ybb.ne.jp>
-Copyright:   (c) 2014-2025 Rick Howe
+Copyright:   (c) 2014-2026 Rick Howe
 License:     MIT
 
 -----------------------------------------------------------------------------
@@ -191,6 +191,9 @@ KEYMAPS                                                *diffchar-keymaps*
 
 -----------------------------------------------------------------------------
 CHANGE HISTORY                                         *diffchar-history*
+
+10.1
+* Made internal changes to share diff function utility with other plugins.
 
 10.0
 * Added |g:DiffDelPosVisible| option to show the position of deleted units.
